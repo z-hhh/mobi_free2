@@ -11,6 +11,7 @@ import { HistoryView } from '../components/history/HistoryView';
 import { SettingsModal } from '../components/settings/SettingsModal';
 import { DebugDrawer } from '../components/debug/DebugDrawer';
 import { ConnectionOverlay } from '../components/common/ConnectionOverlay';
+import { BluetoothUnsupportedAlert } from '../components/common/BluetoothUnsupportedAlert';
 
 import { useBluetooth } from '../hooks/useBluetooth';
 import { bluetoothManager } from '../services/bluetooth/BluetoothManager';
@@ -93,6 +94,7 @@ export function AppLayout() {
             </AppShell.Header>
 
             <AppShell.Main>
+                <BluetoothUnsupportedAlert />
                 {view === 'dashboard' && <Dashboard />}
                 {view === 'history' && <HistoryView />}
             </AppShell.Main>
