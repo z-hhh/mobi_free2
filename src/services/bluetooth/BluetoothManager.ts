@@ -117,6 +117,16 @@ class BluetoothManager {
             this.protocol.disconnect();
             this.protocol = null;
         }
+        this.device = null; // Ensure device is cleared
+    }
+
+    disconnect() {
+        if (this.device && this.device.gatt?.connected) {
+            this.device.gatt.disconnect();
+        } else {
+            // Force manual cleanup if already physically disconnected
+            this.onDisconnect();
+        }
     }
 
     // API for UI

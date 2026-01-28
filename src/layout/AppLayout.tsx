@@ -1,9 +1,8 @@
-import { AppShell, Burger, Group, Text, Image, ActionIcon, Tooltip, Tabs } from '@mantine/core';
+import { AppShell, Burger, Group, Text, Image, ActionIcon, Tooltip, Tabs, Badge } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { setDebugOpen } from '../store/logSlice';
-import { IconSettings, IconBug, IconLayoutDashboard, IconHistory } from '@tabler/icons-react';
 import logo from '../assets/logo.png';
 
 // Views
@@ -13,11 +12,16 @@ import { SettingsModal } from '../components/settings/SettingsModal';
 import { DebugDrawer } from '../components/debug/DebugDrawer';
 import { ConnectionOverlay } from '../components/common/ConnectionOverlay';
 
+import { useBluetooth } from '../hooks/useBluetooth';
+import { bluetoothManager } from '../services/bluetooth/BluetoothManager';
+import { IconSettings, IconBug, IconLayoutDashboard, IconHistory, IconPlugConnectedX } from '@tabler/icons-react';
+
 export function AppLayout() {
     const [opened, { toggle }] = useDisclosure();
     const [settingsOpen, { open: openSettings, close: closeSettings }] = useDisclosure(false);
     const [view, setView] = useState<string | null>('dashboard');
     const dispatch = useDispatch();
+    const { device, status } = useBluetooth();
 
     return (
         <AppShell
@@ -31,6 +35,11 @@ export function AppLayout() {
                         <Text fw={700} size="lg" variant="gradient" gradient={{ from: 'cyan', to: 'blue', deg: 45 }} visibleFrom="xs">
                             Mobi Free
                         </Text>
+                        {status === 'connected' && device && (
+                            <Badge variant="light" color="green" size="lg" leftSection={<Text span>🔗</Text>}>
+                                {device.name}
+                            </Badge>
+                        )}
                     </Group>
 
                     <Group>
@@ -56,6 +65,14 @@ export function AppLayout() {
                                 <IconSettings size={20} />
                             </ActionIcon>
                         </Tooltip>
+
+                        {status === 'connected' && (
+                            <Tooltip label="Disconnect">
+                                <ActionIcon variant="light" color="red" size="lg" onClick={() => bluetoothManager.disconnect()}>
+                                    <IconPlugConnectedX size={20} />
+                                </ActionIcon>
+                            </Tooltip>
+                        )}
                     </Group>
                 </Group>
             </AppShell.Header>

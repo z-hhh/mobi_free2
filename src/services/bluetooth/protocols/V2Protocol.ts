@@ -6,22 +6,38 @@ export class V2Protocol implements DeviceProtocol {
 
     private server: BluetoothRemoteGATTServer | null = null;
     private service: BluetoothRemoteGATTService | null = null;
+    private controlChar: BluetoothRemoteGATTCharacteristic | null = null;
 
     private onDataCallback: ((data: ParsedData) => void) | null = null;
     private onErrorCallback: ((error: Error) => void) | null = null;
 
     async connect(server: BluetoothRemoteGATTServer): Promise<void> {
         this.server = server;
-        // TODO: Implement unlock logic
-        console.log('V2Protocol: Connecting...');
+        this.service = await server.getPrimaryService(this.serviceUUID);
+
+        // Get Control Characteristic
+        this.controlChar = await this.service.getCharacteristic(BLE_UUIDS.V2_CONTROL);
+
+        // TODO: Implement unlock logic if needed (usually handled by control char write)
+        console.log('V2Protocol: Connected and Control Char found');
     }
 
     disconnect(): void {
-        // Cleanup
+        this.server = null;
+        this.service = null;
+        this.controlChar = null;
+        this.onDataCallback = null;
+        this.onErrorCallback = null;
     }
 
     async setResistance(level: number): Promise<void> {
-        // TODO
+        if (!this.controlChar) {
+            console.warn('V2 Control Characteristic not found');
+            return;
+        }
+        // V2 Protocol Resistance Command: 0x01, 0x01, Level
+        const command = new Uint8Array([0x01, 0x01, level]);
+        await this.controlChar.writeValue(command);
     }
 
     async setIncline(level: number): Promise<void> {
