@@ -97,6 +97,10 @@ class BluetoothManager {
                 store.dispatch(addLog({ level: 'error', message: 'Protocol Error', data: err }));
             });
 
+            protocol.onLog((level, message, data) => {
+                store.dispatch(addLog({ level, message, data }));
+            });
+
             // Connect Protocol
             await protocol.connect(server);
 

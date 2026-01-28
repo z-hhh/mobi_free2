@@ -17,4 +17,5 @@ export class V1Protocol implements DeviceProtocol {
 
     onData(cb: (data: ParsedData) => void) { this.onDataCallback = cb; }
     onError(cb: (error: Error) => void) { this.onErrorCallback = cb; }
+    onLog(cb: (level: 'info' | 'warn' | 'error' | 'debug', message: string, data?: any) => void) { }
 }

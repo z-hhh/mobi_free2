@@ -27,4 +27,5 @@ export interface DeviceProtocol {
     // Event Subscription
     onData(callback: (data: ParsedData) => void): void;
     onError(callback: (error: Error) => void): void;
+    onLog(callback: (level: 'info' | 'warn' | 'error' | 'debug', message: string, data?: any) => void): void;
 }
