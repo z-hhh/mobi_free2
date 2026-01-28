@@ -1,6 +1,6 @@
 import { Paper, Slider, Group, ActionIcon, Stack, Text } from '@mantine/core';
 import { IconMinus, IconPlus } from '@tabler/icons-react';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { debounce } from 'lodash';
 import { useBluetooth } from '../../hooks/useBluetooth';
 import { useSelector } from 'react-redux';
@@ -32,8 +32,10 @@ export function ControlPanel() {
         handleChange(newVal);
     };
 
-    // Sync if remote changes (and not dragging?) - Simplified for now
-    // useEffect(() => { setLocalVal(resistance); }, [resistance]); 
+    // Sync local value when resistance changes from device
+    useEffect(() => {
+        setLocalVal(resistance);
+    }, [resistance]);
 
     return (
         <Paper shadow="sm" radius="md" p="md" withBorder>
