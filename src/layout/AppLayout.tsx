@@ -14,7 +14,7 @@ import { ConnectionOverlay } from '../components/common/ConnectionOverlay';
 
 import { useBluetooth } from '../hooks/useBluetooth';
 import { bluetoothManager } from '../services/bluetooth/BluetoothManager';
-import { IconSettings, IconBug, IconLayoutDashboard, IconHistory, IconPlugConnectedX } from '@tabler/icons-react';
+import { IconSettings, IconBug, IconLayoutDashboard, IconHistory, IconPlugConnectedX, IconBrandGithub } from '@tabler/icons-react';
 
 export function AppLayout() {
     const [opened, { toggle }] = useDisclosure();
@@ -67,6 +67,19 @@ export function AppLayout() {
                         <Tooltip label="调试">
                             <ActionIcon variant="light" size="lg" onClick={() => dispatch(setDebugOpen(true))}>
                                 <IconBug size={20} />
+                            </ActionIcon>
+                        </Tooltip>
+
+                        <Tooltip label="GitHub 仓库">
+                            <ActionIcon
+                                variant="light"
+                                size="lg"
+                                component="a"
+                                href="https://github.com/z-hhh/mobi_free2"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                <IconBrandGithub size={20} />
                             </ActionIcon>
                         </Tooltip>
 
