@@ -107,21 +107,20 @@ class BluetoothManager {
             const huantongService = this.normalizeUUID(BLE_UUIDS.HUANTONG_SERVICE);
             const ftmsService = this.normalizeUUID(BLE_UUIDS.FTMS_SERVICE);
 
-            if (serviceUUIDs.includes(v2Service)) {
+            // Priority: FTMS > V2 > V1 > HuanTong
+            // FTMS is prioritized because it provides more complete data
+            if (serviceUUIDs.includes(ftmsService)) {
+                protocol = new FTMSProtocol();
+                version = 'ftms';
+            } else if (serviceUUIDs.includes(v2Service)) {
                 protocol = new V2Protocol();
                 version = 'v2';
             } else if (serviceUUIDs.includes(v1Service)) {
                 protocol = new V1Protocol();
                 version = 'v1';
             } else if (serviceUUIDs.includes(huantongService)) {
-                // Also could check name for 'MOBI-E' etc as per official app
                 protocol = new HuanTongProtocol();
-                version = 'v1'; // Reuse V1 UI logic or add new version type? Let's use 'v1' or 'ftms' for now, or add 'huantong' to types.
-                // Actually, let's stick to 'v1' for state simplicity if it behaves similarly, or add 'huantong'.
-                // Ideally add 'huantong' to types.
-            } else if (serviceUUIDs.includes(ftmsService)) {
-                protocol = new FTMSProtocol();
-                version = 'ftms';
+                version = 'v1';
             }
 
             if (!protocol) {
