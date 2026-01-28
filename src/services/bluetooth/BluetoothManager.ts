@@ -23,17 +23,31 @@ class BluetoothManager {
             store.dispatch(setConnectionStatus('scanning'));
             store.dispatch(addLog({ level: 'info', message: 'Starting Scan...' }));
 
-            const device = await navigator.bluetooth.requestDevice({
-                filters: [{ namePrefix: 'Mobi' }, { namePrefix: 'MB' }, { namePrefix: 'MOBI' }],
-                optionalServices: [
-                    BLE_UUIDS.V2_SERVICE,
-                    BLE_UUIDS.V1_SERVICE,
-                    BLE_UUIDS.HUANTONG_SERVICE,
-                    BLE_UUIDS.FTMS_SERVICE,
-                    BLE_UUIDS.DEVICE_INFO,
-                    BLE_UUIDS.HEART_RATE
-                ]
-            });
+            // Detect Bluefy browser
+            const isBluefy = navigator.userAgent.toLowerCase().includes('bluefy');
+
+            let device: BluetoothDevice;
+
+            if (isBluefy) {
+                // Bluefy: use acceptAllDevices without filters
+                store.dispatch(addLog({ level: 'debug', message: 'Bluefy detected: using acceptAllDevices mode' }));
+                device = await navigator.bluetooth.requestDevice({
+                    acceptAllDevices: true
+                });
+            } else {
+                // Standard browsers: use filters and optionalServices
+                device = await navigator.bluetooth.requestDevice({
+                    filters: [{ namePrefix: 'Mobi' }, { namePrefix: 'MB' }, { namePrefix: 'MOBI' }],
+                    optionalServices: [
+                        BLE_UUIDS.V2_SERVICE,
+                        BLE_UUIDS.V1_SERVICE,
+                        BLE_UUIDS.HUANTONG_SERVICE,
+                        BLE_UUIDS.FTMS_SERVICE,
+                        BLE_UUIDS.DEVICE_INFO,
+                        BLE_UUIDS.HEART_RATE
+                    ]
+                });
+            }
 
             this.device = device;
             store.dispatch(addLog({ level: 'info', message: `Device selected: ${device.name} (${device.id})` }));
