@@ -14,22 +14,22 @@ export function PrimaryGauge() {
         case 'rower':
             value = spm;
             max = 60;
-            label = 'SPM';
+            label = '桨频';
             break;
         case 'bike':
             value = rpm;
             max = 120;
-            label = 'RPM';
+            label = '踏频';
             break;
         case 'elliptical':
             value = spm;
             max = 90;
-            label = 'SPM';
+            label = '步频';
             break;
         case 'treadmill':
             value = speed;
             max = 20;
-            label = 'SPEED';
+            label = '速度';
             unit = 'km/h';
             break;
         default:

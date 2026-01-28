@@ -21,17 +21,17 @@ export function DebugDrawer() {
         <Drawer
             opened={isOpen}
             onClose={() => dispatch(setDebugOpen(false))}
-            title="Debug Console"
+            title="调试控制台"
             position="right"
             size="xl"
         >
             <Stack h="calc(100vh - 80px)">
                 <Group>
                     <Button leftSection={<IconCopy size={16} />} onClick={handleCopy} variant="light">
-                        {clipboard.copied ? 'Copied' : 'Copy Logs'}
+                        {clipboard.copied ? '已复制' : '复制日志'}
                     </Button>
                     <Button leftSection={<IconTrash size={16} />} onClick={() => dispatch(clearLogs())} variant="light" color="red">
-                        Clear
+                        清空
                     </Button>
                 </Group>
 

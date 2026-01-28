@@ -36,46 +36,48 @@ export function MetricGrid() {
             case 'rower':
                 return (
                     <>
-                        <MetricCard label="Split /500m" value={formatSplit(split500m)} />
-                        <MetricCard label="Distance" value={distance} unit="m" />
-                        <MetricCard label="Watts" value={power} />
-                        <MetricCard label="Drag / Level" value={resistance} />
+                        <MetricCard label="配速 /500m" value={formatSplit(split500m)} />
+                        <MetricCard label="距离" value={distance} unit="m" />
+                        <MetricCard label="功率" value={power} />
+                        <MetricCard label="阻力等级" value={resistance} />
                     </>
                 );
             case 'bike':
                 return (
                     <>
-                        <MetricCard label="Speed" value={speed.toFixed(1)} unit="km/h" />
-                        <MetricCard label="Distance" value={(distance / 1000).toFixed(2)} unit="km" />
-                        <MetricCard label="Resistance" value={resistance} />
-                        <MetricCard label="Power" value={power} unit="w" />
+                        <MetricCard label="速度" value={speed.toFixed(1)} unit="km/h" />
+                        <MetricCard label="距离" value={(distance / 1000).toFixed(2)} unit="km" />
+                        <MetricCard label="阻力" value={resistance} />
+                        <MetricCard label="功率" value={power} unit="w" />
                     </>
                 );
             case 'elliptical':
                 return (
                     <>
-                        <MetricCard label="Resistance" value={resistance} />
-                        <MetricCard label="Distance" value={(distance / 1000).toFixed(2)} unit="km" />
-                        <MetricCard label="Speed" value={speed.toFixed(1)} unit="km/h" />
-                        <MetricCard label="Heart Rate" value={heartRate} unit="bpm" />
+                        <MetricCard label="阻力" value={resistance} />
+                        <MetricCard label="距离" value={(distance / 1000).toFixed(2)} unit="km" />
+                        <MetricCard label="速度" value={speed.toFixed(1)} unit="km/h" />
+                        <MetricCard label="心率" value={heartRate} unit="bpm" />
                     </>
                 );
             case 'treadmill':
                 return (
                     <>
-                        <MetricCard label="Incline" value={incline} unit="%" />
-                        <MetricCard label="Distance" value={(distance / 1000).toFixed(2)} unit="km" />
-                        <MetricCard label="Pace" value={speed > 0 ? (60 / speed).toFixed(2) : '--'} unit="min/km" />
-                        <MetricCard label="Heart Rate" value={heartRate} unit="bpm" />
+                        <MetricCard label="坡度" value={incline} unit="%" />
+                        <MetricCard label="距离" value={(distance / 1000).toFixed(2)} unit="km" />
+                        <MetricCard label="配速" value={speed > 0 ? (60 / speed).toFixed(2) : '--'} unit="min/km" />
+                        <MetricCard label="心率" value={heartRate} unit="bpm" />
                     </>
                 );
             default:
                 // Generic fallback
                 return (
                     <>
-                        <MetricCard label="Distance" value={distance} unit="m" />
-                        <MetricCard label="Heart Rate" value={heartRate} unit="bpm" />
-                        <MetricCard label="Resistance" value={resistance} />
+                        <>
+                            <MetricCard label="距离" value={distance} unit="m" />
+                            <MetricCard label="心率" value={heartRate} unit="bpm" />
+                            <MetricCard label="阻力" value={resistance} />
+                        </>
                     </>
                 );
         }

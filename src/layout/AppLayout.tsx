@@ -41,10 +41,10 @@ export function AppLayout() {
                         <Tabs value={view} onChange={setView} variant="pills" visibleFrom="sm">
                             <Tabs.List>
                                 <Tabs.Tab value="dashboard" leftSection={<IconLayoutDashboard size={16} />}>
-                                    Dashboard
+                                    仪表盘
                                 </Tabs.Tab>
                                 <Tabs.Tab value="history" leftSection={<IconHistory size={16} />}>
-                                    History
+                                    历史记录
                                 </Tabs.Tab>
                             </Tabs.List>
                         </Tabs>
@@ -56,7 +56,7 @@ export function AppLayout() {
                                         {device.name}
                                     </Badge>
                                 )}
-                                <Tooltip label="Disconnect">
+                                <Tooltip label="断开连接">
                                     <ActionIcon variant="light" color="red" size="lg" onClick={() => bluetoothManager.disconnect()}>
                                         <IconPlugConnectedX size={20} />
                                     </ActionIcon>
@@ -64,13 +64,13 @@ export function AppLayout() {
                             </Group>
                         )}
 
-                        <Tooltip label="Debug">
+                        <Tooltip label="调试">
                             <ActionIcon variant="light" size="lg" onClick={() => dispatch(setDebugOpen(true))}>
                                 <IconBug size={20} />
                             </ActionIcon>
                         </Tooltip>
 
-                        <Tooltip label="Settings">
+                        <Tooltip label="设置">
                             <ActionIcon variant="light" size="lg" onClick={openSettings}>
                                 <IconSettings size={20} />
                             </ActionIcon>

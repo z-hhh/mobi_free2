@@ -24,8 +24,8 @@ export function Dashboard() {
                 <Overlay color="#000" backgroundOpacity={0.6} zIndex={10}>
                     <Center h="100%">
                         <Stack>
-                            <Text c="white" size="xl" fw={700}>PAUSED</Text>
-                            <Button size="lg" onClick={() => dispatch(togglePause())}>Resume</Button>
+                            <Text c="white" size="xl" fw={700}>已暂停</Text>
+                            <Button size="lg" onClick={() => dispatch(togglePause())}>继续</Button>
                         </Stack>
                     </Center>
                 </Overlay>

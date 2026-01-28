@@ -19,13 +19,13 @@ export function SettingsModal({ opened, onClose }: Props) {
     // We'll show it under "Rower Settings" section
 
     return (
-        <Modal opened={opened} onClose={onClose} title="Settings" centered>
+        <Modal opened={opened} onClose={onClose} title="设置" centered>
             <Stack gap="lg">
                 <Stack gap="xs">
-                    <Text size="sm" fw={500}>User Profile</Text>
+                    <Text size="sm" fw={500}>用户信息</Text>
                     <NumberInput
-                        label="Weight (kg)"
-                        description="Required for accurate calorie calculation"
+                        label="体重 (kg)"
+                        description="用于计算卡路里"
                         value={settings.userProfile.weightKg}
                         onChange={(val) => dispatch(updateWeight(Number(val) || 70))}
                         min={30}
@@ -34,13 +34,13 @@ export function SettingsModal({ opened, onClose }: Props) {
                 </Stack>
 
                 <Stack gap="xs">
-                    <Text size="sm" fw={500}>Rower Settings</Text>
+                    <Text size="sm" fw={500}>划船机设置</Text>
                     <Select
-                        label="Boat Type"
+                        label="船型"
                         data={[
-                            { value: 'water', label: 'Water (Standard)' },
-                            { value: 'magnet', label: 'Magnetic' },
-                            { value: 'wind', label: 'Air / Wind' }
+                            { value: 'water', label: '水阻 (标准)' },
+                            { value: 'magnet', label: '磁阻' },
+                            { value: 'wind', label: '风阻' }
                         ]}
                         value={settings.rower.boatType}
                         onChange={(val) => val && dispatch(setBoatType(val as any))}
@@ -48,9 +48,9 @@ export function SettingsModal({ opened, onClose }: Props) {
                 </Stack>
 
                 <Stack gap="xs">
-                    <Text size="sm" fw={500}>App Preferences</Text>
+                    <Text size="sm" fw={500}>应用偏好</Text>
                     <Group justify="space-between">
-                        <Text size="sm">Theme</Text>
+                        <Text size="sm">主题</Text>
                         <SegmentedControl
                             value={settings.app.theme}
                             onChange={(val) => dispatch(setTheme(val as any))}
@@ -59,7 +59,7 @@ export function SettingsModal({ opened, onClose }: Props) {
                     </Group>
 
                     <Group justify="space-between">
-                        <Text size="sm">Auto-Connect</Text>
+                        <Text size="sm">自动连接</Text>
                         <Switch
                             checked={settings.app.autoConnect}
                             onChange={(e) => dispatch(setAutoConnect(e.currentTarget.checked))}

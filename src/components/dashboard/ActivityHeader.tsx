@@ -13,11 +13,11 @@ export function ActivityHeader() {
     return (
         <Group justify="space-between" align="start">
             <Stack gap={0}>
-                <Text size="xs" c="dimmed">TIME</Text>
+                <Text size="xs" c="dimmed">时间</Text>
                 <Text size="xl" fw={700}>{formatTime(duration)}</Text>
             </Stack>
             <Stack gap={0} align="end">
-                <Text size="xs" c="dimmed">CALORIES</Text>
+                <Text size="xs" c="dimmed">卡路里</Text>
                 <Text size="xl" fw={700}>{calories.toFixed(1)}</Text>
             </Stack>
         </Group>

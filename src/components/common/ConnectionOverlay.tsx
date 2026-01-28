@@ -22,31 +22,31 @@ export function ConnectionOverlay() {
             <Stack align="center" justify="center" h="100vh" gap="xl">
                 <IconBluetooth size={64} color="#228be6" />
 
-                <Text size="xl" fw={700}>Connect to Equipment</Text>
+                <Text size="xl" fw={700}>连接设备</Text>
 
                 {status === 'disconnected' && (
                     <Button size="xl" onClick={scan} leftSection={<IconBluetooth />}>
-                        Scan for Devices
+                        扫描设备
                     </Button>
                 )}
 
                 {(status === 'scanning' || status === 'connecting') && (
                     <Stack align="center">
                         <Loader size="lg" type="dots" />
-                        <Text>{status === 'scanning' ? 'Scanning...' : 'Connecting...'}</Text>
+                        <Text>{status === 'scanning' ? '扫描中...' : '连接中...'}</Text>
                     </Stack>
                 )}
 
                 {status === 'error' && (
                     <Stack align="center">
-                        <Text c="red">Connection Failed</Text>
+                        <Text c="red">连接失败</Text>
                         <Text size="sm" c="dimmed">{error}</Text>
-                        <Button onClick={scan} variant="outline" color="red">Retry</Button>
+                        <Button onClick={scan} variant="outline" color="red">重试</Button>
                     </Stack>
                 )}
 
                 <Text size="sm" c="dimmed" mt="xl">
-                    Supported: Rower, Bike, Elliptical, Treadmill
+                    支持设备：划船机、单车、椭圆机、跑步机
                 </Text>
             </Stack>
         </Modal>

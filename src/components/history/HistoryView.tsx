@@ -33,12 +33,12 @@ export function HistoryView() {
                 <Grid.Col span={{ base: 12, md: 7 }}>
                     <Stack>
                         <Text size="lg" fw={700}>
-                            {date ? dayjs(date).format('MMMM D, YYYY') : 'Select a date'}
+                            {date ? dayjs(date).format('YYYY年M月D日') : '选择日期'}
                         </Text>
 
                         {workouts.length === 0 ? (
                             <Paper p="xl" withBorder ta="center" c="dimmed">
-                                No workouts recorded this day.
+                                暂无运动记录
                             </Paper>
                         ) : (
                             <ScrollArea h={400}>
@@ -49,20 +49,20 @@ export function HistoryView() {
                                                 <Group>
                                                     <Stack gap={0}>
                                                         <Text fw={700}>{dayjs(w.startTime).format('HH:mm')}</Text>
-                                                        <Badge>{w.deviceType || 'Equipment'}</Badge>
+                                                        <Badge>{w.deviceType || '设备'}</Badge>
                                                     </Stack>
                                                 </Group>
                                                 <Group gap="xl">
                                                     <div>
-                                                        <Text size="xs" c="dimmed">TIME</Text>
+                                                        <Text size="xs" c="dimmed">时间</Text>
                                                         <Text fw={500}>{Math.floor(w.duration / 60)}m</Text>
                                                     </div>
                                                     <div>
-                                                        <Text size="xs" c="dimmed">DIST</Text>
+                                                        <Text size="xs" c="dimmed">距离</Text>
                                                         <Text fw={500}>{w.distance}m</Text>
                                                     </div>
                                                     <div>
-                                                        <Text size="xs" c="dimmed">CAL</Text>
+                                                        <Text size="xs" c="dimmed">卡路里</Text>
                                                         <Text fw={500}>{w.calories}</Text>
                                                     </div>
                                                 </Group>

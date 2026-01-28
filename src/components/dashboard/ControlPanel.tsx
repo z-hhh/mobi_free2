@@ -38,7 +38,7 @@ export function ControlPanel() {
     return (
         <Paper shadow="sm" radius="md" p="md" withBorder>
             <Stack gap="xs">
-                <Text size="xs" tt="uppercase" c="dimmed" ta="center">Resistance</Text>
+                <Text size="xs" tt="uppercase" c="dimmed" ta="center">阻力</Text>
                 <Group>
                     <ActionIcon size="xl" variant="light" onClick={() => handleStep(-1)}>
                         <IconMinus />
