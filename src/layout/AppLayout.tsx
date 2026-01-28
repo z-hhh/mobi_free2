@@ -80,7 +80,7 @@ export function AppLayout() {
                                     leftSection={<IconHeart size={16} />}
                                     onClick={openDonate}
                                 >
-                                    捐赠支持
+                                    捐助项目
                                 </Menu.Item>
 
                                 <Menu.Item

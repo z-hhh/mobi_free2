@@ -1,7 +1,7 @@
 import { SimpleGrid, Paper, Text, Stack, Group, ThemeIcon } from '@mantine/core';
 import { useWorkout } from '../../hooks/useWorkout';
 import {
-    IconActivity, IconBolt, IconRuler2, IconClock, IconGauge, IconHeartbeat, IconTrendingUp, IconBarbell
+    IconActivity, IconBolt, IconRuler2, IconClock, IconGauge, IconTrendingUp, IconBarbell, IconFlame
 } from '@tabler/icons-react';
 
 interface MetricCardProps {
@@ -25,12 +25,12 @@ function MetricCard({ label, value, unit, icon: Icon, color = 'blue' }: MetricCa
             <Text fz={32} fw={700} lh={1}>
                 {value} <Text span size="sm" fw={400} c="dimmed">{unit}</Text>
             </Text>
-        </Paper>
+        </Paper >
     );
 }
 
 export function MetricGrid() {
-    const { equipmentType, split500m, distance, power, resistance, speed, heartRate, incline, count } = useWorkout();
+    const { equipmentType, split500m, distance, power, resistance, speed, incline, calories, duration } = useWorkout();
 
     // Helper to formatting split (seconds to MM:SS)
     const formatSplit = (s: number) => {
@@ -40,65 +40,63 @@ export function MetricGrid() {
         return `${m}:${sec.toString().padStart(2, '0')}`;
     };
 
+    // Format duration as HH:MM:SS
+    const formatDuration = (s: number) => {
+        const h = Math.floor(s / 3600);
+        const m = Math.floor((s % 3600) / 60);
+        const sec = Math.floor(s % 60);
+        if (h > 0) {
+            return `${h}:${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+        }
+        return `${m}:${sec.toString().padStart(2, '0')}`;
+    };
+
     const renderMetrics = () => {
         switch (equipmentType) {
             case 'rower':
                 return (
                     <>
-                        <>
-                            <MetricCard label="配速 /500m" value={formatSplit(split500m)} icon={IconClock} color="indigo" />
-                            <MetricCard label="距离" value={distance} unit="m" icon={IconRuler2} color="teal" />
-                            <MetricCard label="功率" value={power} icon={IconBolt} color="yellow" />
-                            <MetricCard label="阻力等级" value={resistance} icon={IconBarbell} color="gray" />
-                        </>
+                        <MetricCard label="配速 /500m" value={formatSplit(split500m)} icon={IconClock} color="indigo" />
+                        <MetricCard label="距离" value={distance} unit="m" icon={IconRuler2} color="teal" />
+                        <MetricCard label="功率" value={power} unit="w" icon={IconBolt} color="yellow" />
+                        <MetricCard label="阻力等级" value={resistance} icon={IconBarbell} color="gray" />
                     </>
                 );
             case 'bike':
                 return (
                     <>
-                        <>
-                            <MetricCard label="速度" value={speed.toFixed(1)} unit="km/h" icon={IconGauge} color="cyan" />
-                            <MetricCard label="距离" value={(distance / 1000).toFixed(2)} unit="km" icon={IconRuler2} color="teal" />
-                            <MetricCard label="阻力" value={resistance} icon={IconBarbell} color="gray" />
-                            <MetricCard label="功率" value={power} unit="w" icon={IconBolt} color="yellow" />
-                        </>
+                        <MetricCard label="速度" value={speed.toFixed(1)} unit="km/h" icon={IconGauge} color="cyan" />
+                        <MetricCard label="距离" value={(distance / 1000).toFixed(2)} unit="km" icon={IconRuler2} color="teal" />
+                        <MetricCard label="阻力" value={resistance} icon={IconBarbell} color="gray" />
+                        <MetricCard label="功率" value={power} unit="w" icon={IconBolt} color="yellow" />
                     </>
                 );
             case 'elliptical':
                 return (
                     <>
-                        <>
-                            <MetricCard label="阻力" value={resistance} icon={IconBarbell} color="gray" />
-                            <MetricCard label="距离" value={(distance / 1000).toFixed(2)} unit="km" icon={IconRuler2} color="teal" />
-                            <MetricCard label="速度" value={speed.toFixed(1)} unit="km/h" icon={IconGauge} color="cyan" />
-                            <MetricCard label="心率" value={heartRate} unit="bpm" icon={IconHeartbeat} color="red" />
-                        </>
+                        <MetricCard label="时长" value={formatDuration(duration)} icon={IconClock} color="indigo" />
+                        <MetricCard label="距离" value={(distance / 1000).toFixed(2)} unit="km" icon={IconRuler2} color="teal" />
+                        <MetricCard label="卡路里" value={calories} unit="kcal" icon={IconFlame} color="orange" />
+                        <MetricCard label="阻力" value={resistance} icon={IconBarbell} color="gray" />
+                        <MetricCard label="速度" value={speed.toFixed(1)} unit="km/h" icon={IconGauge} color="cyan" />
                     </>
                 );
             case 'treadmill':
                 return (
                     <>
-                        <>
-                            <MetricCard label="坡度" value={incline} unit="%" icon={IconTrendingUp} color="orange" />
-                            <MetricCard label="距离" value={(distance / 1000).toFixed(2)} unit="km" icon={IconRuler2} color="teal" />
-                            <MetricCard label="配速" value={speed > 0 ? (60 / speed).toFixed(2) : '--'} unit="min/km" icon={IconClock} color="indigo" />
-                            <MetricCard label="心率" value={heartRate} unit="bpm" icon={IconHeartbeat} color="red" />
-                        </>
+                        <MetricCard label="坡度" value={incline} unit="%" icon={IconTrendingUp} color="orange" />
+                        <MetricCard label="距离" value={(distance / 1000).toFixed(2)} unit="km" icon={IconRuler2} color="teal" />
+                        <MetricCard label="配速" value={speed > 0 ? (60 / speed).toFixed(2) : '--'} unit="min/km" icon={IconClock} color="indigo" />
+                        <MetricCard label="卡路里" value={calories} unit="kcal" icon={IconFlame} color="orange" />
                     </>
                 );
             default:
                 // Generic fallback
                 return (
                     <>
-                        <>
-                            <>
-                                <MetricCard label="距离" value={distance} unit="m" icon={IconRuler2} color="teal" />
-                                <MetricCard label="心率" value={heartRate} unit="bpm" icon={IconHeartbeat} color="red" />
-                                <div style={{ gridColumn: 'span 2' }}>
-                                    <MetricCard label="阻力" value={resistance} icon={IconBarbell} color="gray" />
-                                </div>
-                            </>
-                        </>
+                        <MetricCard label="距离" value={distance} unit="m" icon={IconRuler2} color="teal" />
+                        <MetricCard label="卡路里" value={calories} unit="kcal" icon={IconFlame} color="orange" />
+                        <MetricCard label="阻力" value={resistance} icon={IconBarbell} color="gray" />
                     </>
                 );
         }
