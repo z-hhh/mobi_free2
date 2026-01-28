@@ -48,7 +48,7 @@ export class V2Protocol implements DeviceProtocol {
             try {
                 const modelChar = await deviceInfoService.getCharacteristic(BLE_UUIDS.MODEL_NUMBER);
                 const value = await modelChar.readValue();
-                const modelNumber = new TextDecoder().decode(value);
+                const modelNumber = new TextDecoder().decode(value).replace(/\0/g, '').trim();
                 this.log('info', `V2: Model Number: ${modelNumber}`);
             } catch (e) {
                 this.log('debug', 'V2: Model Number not available');
@@ -58,7 +58,7 @@ export class V2Protocol implements DeviceProtocol {
             try {
                 const serialChar = await deviceInfoService.getCharacteristic(BLE_UUIDS.SERIAL_NUMBER);
                 const value = await serialChar.readValue();
-                const serialNumber = new TextDecoder().decode(value);
+                const serialNumber = new TextDecoder().decode(value).replace(/\0/g, '').trim();
                 this.log('info', `V2: Serial Number: ${serialNumber}`);
             } catch (e) {
                 this.log('debug', 'V2: Serial Number not available');
@@ -68,7 +68,7 @@ export class V2Protocol implements DeviceProtocol {
             try {
                 const firmwareChar = await deviceInfoService.getCharacteristic(BLE_UUIDS.FIRMWARE_REV);
                 const value = await firmwareChar.readValue();
-                const firmwareVersion = new TextDecoder().decode(value);
+                const firmwareVersion = new TextDecoder().decode(value).replace(/\0/g, '').trim();
                 this.log('info', `V2: Firmware Version: ${firmwareVersion}`);
             } catch (e) {
                 this.log('debug', 'V2: Firmware Version not available');
