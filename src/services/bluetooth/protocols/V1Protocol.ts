@@ -54,12 +54,21 @@ export class V1Protocol implements DeviceProtocol {
         // Based on typical elliptical machine protocols and mobi-official patterns
         // The exact byte positions may need adjustment based on actual device behavior
 
-        // Log raw data for debugging (uncomment if needed)
-        // const hex = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join(' ');
-        // this.log('debug', `V1 Data (${bytes.length} bytes): ${hex}`);
+        // Log raw data for debugging
+        const hex = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join(' ');
+        this.log('debug', `V1 Data (${bytes.length} bytes): ${hex}`);
 
         if (bytes.length < 10) {
             // Not enough data, skip parsing
+            return;
+        }
+
+        // Check for error codes (per mobi-official V1Handler.handlingErrorCodes)
+        // Error codes are typically in specific byte positions
+        if (bytes.length > 2 && bytes[1] === 0xFF) {
+            // Error message detected
+            const errorCode = bytes[2];
+            this.handleErrorCode(errorCode);
             return;
         }
 
@@ -104,6 +113,34 @@ export class V1Protocol implements DeviceProtocol {
         // Send parsed data to callback
         if (this.onDataCallback) {
             this.onDataCallback(parsedData);
+        }
+    }
+
+    /**
+     * Handle error codes from the device
+     * Per mobi-official V1Handler.handlingErrorCodes
+     */
+    private handleErrorCode(errorCode: number): void {
+        let errorMessage: string;
+
+        if (errorCode >= 1 && errorCode < 19) {
+            errorMessage = `设备故障代码 E${errorCode}，请联系客服`;
+        } else if (errorCode === 19) {
+            errorMessage = '跑步机收起/展开中，请远离';
+        } else if (errorCode === 20) {
+            errorMessage = '跑步机收起/展开中，请勿阻碍跑台';
+        } else if (errorCode === 21) {
+            errorMessage = '跑步机收起/展开中，请勿站在跑台上';
+        } else if (errorCode === 22) {
+            errorMessage = '跑步机里程数已较高，请添加润滑油';
+        } else {
+            errorMessage = `未知错误代码: ${errorCode}`;
+        }
+
+        this.log('error', `V1 Device Error: ${errorMessage}`, { errorCode });
+
+        if (this.onErrorCallback) {
+            this.onErrorCallback(new Error(errorMessage));
         }
     }
 
@@ -159,6 +196,7 @@ export class V1Protocol implements DeviceProtocol {
 
     async setIncline(level: number): Promise<void> {
         // Not implemented for basic V1
+        this.log('warn', 'V1: Incline control not supported');
     }
 
     onData(cb: (data: ParsedData) => void) { this.onDataCallback = cb; }
