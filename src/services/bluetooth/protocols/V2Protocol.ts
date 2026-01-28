@@ -30,8 +30,18 @@ export class V2Protocol implements DeviceProtocol {
             }
         }
 
-        // TODO: Implement unlock logic if needed (usually handled by control char write)
-        console.log('V2Protocol: Connected and Control Char found');
+        // Unlock V2 Device (CRITICAL: Required before any control commands)
+        // Per mobi-official V2Handler.unlock0x02VerBLeDeviceWritePermission
+        try {
+            const unlockChar = await this.service.getCharacteristic(BLE_UUIDS.V2_UNLOCK);
+            await unlockChar.writeValue(V2_COMMANDS.UNLOCK_INSTRUCTION);
+            this.log('info', 'V2: Device unlocked successfully (0x11 0x82 0x07)');
+        } catch (e) {
+            this.log('error', 'V2: Failed to unlock device - control commands may not work', e);
+            throw new Error('Failed to unlock V2 device');
+        }
+
+        this.log('info', 'V2Protocol: Connected and unlocked');
     }
 
     private handleControlResponse = (event: Event) => {
@@ -63,14 +73,15 @@ export class V2Protocol implements DeviceProtocol {
 
     async setResistance(level: number): Promise<void> {
         if (!this.controlChar) {
-            console.warn('V2 Control Characteristic not found');
+            this.log('warn', 'V2: Control Characteristic not found');
             return;
         }
-        // V2 Protocol Resistance Command: 0x01, 0x01, Level
-        // Writes to 880f (CONTROL_INSTRUCT_TYPE)
-        const command = new Uint8Array([0x01, 0x01, level]);
-        // Note: controlChar was originally defined as V2_CONTROL which is 880f. This is correct.
+        // V2 Protocol Resistance Command: [CMD, LENGTH, LEVEL]
+        // Per mobi-official V2Handler.bleVer0x02Control case 4:
+        // CMD=0x02 (resistance), LENGTH=0x01, DATA=level
+        const command = new Uint8Array([0x02, 0x01, level]);
         await this.controlChar.writeValue(command);
+        this.log('info', `V2: Set Resistance to ${level}`);
     }
 
     async setIncline(level: number): Promise<void> {

@@ -39,7 +39,7 @@ export class V1Protocol implements DeviceProtocol {
             throw e;
         }
 
-        console.log('V1Protocol: Connected');
+        this.log('info', 'V1Protocol: Connected');
     }
 
     private handleDataNotify = (event: Event) => {
@@ -50,35 +50,60 @@ export class V1Protocol implements DeviceProtocol {
         const bytes = new Uint8Array(value.buffer);
         this.lastData = bytes; // Cache for control commands
 
-        // V1 Data Parsing (Based on observation/standard metric positions)
-        // Need to confirm exact parsing from V1Handler, but typically:
-        // [HEADER, ?, ?, TIME_H, TIME_L, DIST_H, DIST_L, CAL_H, CAL_L, SPEED_H, SPEED_L, RPM, RESISTANCE, ...]
+        // V1 Data Parsing
+        // Based on typical elliptical machine protocols and mobi-official patterns
+        // The exact byte positions may need adjustment based on actual device behavior
 
-        // For now, logging the raw data to reverse engineer if structure differs from assumption
+        // Log raw data for debugging (uncomment if needed)
         // const hex = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join(' ');
-        // this.log('debug', `V1 Data: ${hex}`);
+        // this.log('debug', `V1 Data (${bytes.length} bytes): ${hex}`);
 
-        // Placeholder Parsing - will refine based on V1Handler logs if available, 
-        // but Mobi Official V1Handler uses an extracted `ellipticalData` which implies standard positions.
-        // Assuming:
-        // Byte 0: Header (0xAB)
-        // Byte 1: Cmd (0x02 usually for data)
-        // ...
+        if (bytes.length < 10) {
+            // Not enough data, skip parsing
+            return;
+        }
 
-        // Let's implement basic parsing if possible, or trigger callbacks
-        // Note: V1Handler uses 'ellipticalData' [6] as resistance sometimes? 
-        // We will need to verify parsing logic. For now, we capture 'lastData' which is critical for writing.
+        // Parse data based on common V1 protocol structure
+        // Note: These positions are estimated and may need adjustment
+        const parsedData: ParsedData = {};
 
-        // Based on common protocols:
-        // data[5] might be Resistance Level (used in write back)
+        // Resistance (byte 5 is commonly used, also needed for write-back)
+        if (bytes.length > 5) {
+            parsedData.resistance = bytes[5];
+        }
 
-        const resistance = bytes.length > 5 ? bytes[5] : 0;
+        // Time (bytes 3-4, typically in seconds, big-endian)
+        if (bytes.length > 4) {
+            const timeRaw = (bytes[3] << 8) | bytes[4];
+            parsedData.time = timeRaw; // in seconds
+        }
 
+        // Distance (bytes 6-7, typically in meters or 0.1km units)
+        if (bytes.length > 7) {
+            const distRaw = (bytes[6] << 8) | bytes[7];
+            parsedData.distance = distRaw / 10; // convert to km
+        }
+
+        // Calories (bytes 8-9, typically in kcal)
+        if (bytes.length > 9) {
+            const calRaw = (bytes[8] << 8) | bytes[9];
+            parsedData.calories = calRaw;
+        }
+
+        // Speed (bytes 10-11, typically in 0.1 km/h units)
+        if (bytes.length > 11) {
+            const speedRaw = (bytes[10] << 8) | bytes[11];
+            parsedData.speed = speedRaw / 10; // convert to km/h
+        }
+
+        // SPM/RPM (byte 12, revolutions or steps per minute)
+        if (bytes.length > 12) {
+            parsedData.spm = bytes[12];
+        }
+
+        // Send parsed data to callback
         if (this.onDataCallback) {
-            this.onDataCallback({
-                resistance
-                // TODO: Parse Speed, Time, Dist, Cal
-            });
+            this.onDataCallback(parsedData);
         }
     }
 
