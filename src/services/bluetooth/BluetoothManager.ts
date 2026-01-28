@@ -11,6 +11,7 @@ import { DeviceProtocol } from './DeviceProtocol';
 import { V2Protocol } from './protocols/V2Protocol';
 import { V1Protocol } from './protocols/V1Protocol';
 import { FTMSProtocol } from './protocols/FTMSProtocol';
+import { HuanTongProtocol } from './protocols/HuanTongProtocol';
 import { BLE_UUIDS } from './constants';
 
 class BluetoothManager {
@@ -27,6 +28,7 @@ class BluetoothManager {
                 optionalServices: [
                     BLE_UUIDS.V2_SERVICE,
                     BLE_UUIDS.V1_SERVICE,
+                    BLE_UUIDS.HUANTONG_SERVICE,
                     BLE_UUIDS.FTMS_SERVICE,
                     BLE_UUIDS.DEVICE_INFO,
                     BLE_UUIDS.HEART_RATE
@@ -75,6 +77,12 @@ class BluetoothManager {
             } else if (serviceUUIDs.includes(BLE_UUIDS.V1_SERVICE)) {
                 protocol = new V1Protocol();
                 version = 'v1';
+            } else if (serviceUUIDs.includes(BLE_UUIDS.HUANTONG_SERVICE)) {
+                // Also could check name for 'MOBI-E' etc as per official app
+                protocol = new HuanTongProtocol();
+                version = 'v1'; // Reuse V1 UI logic or add new version type? Let's use 'v1' or 'ftms' for now, or add 'huantong' to types.
+                // Actually, let's stick to 'v1' for state simplicity if it behaves similarly, or add 'huantong'.
+                // Ideally add 'huantong' to types.
             } else if (serviceUUIDs.includes(BLE_UUIDS.FTMS_SERVICE)) {
                 protocol = new FTMSProtocol();
                 version = 'ftms';
