@@ -38,13 +38,13 @@ export function AppLayout() {
                     </Group>
 
                     <Group>
-                        <Tabs value={view} onChange={setView} variant="pills" visibleFrom="sm">
+                        <Tabs value={view} onChange={setView} variant="pills">
                             <Tabs.List>
                                 <Tabs.Tab value="dashboard" leftSection={<IconLayoutDashboard size={16} />}>
-                                    仪表盘
+                                    <Text span visibleFrom="sm">仪表盘</Text>
                                 </Tabs.Tab>
                                 <Tabs.Tab value="history" leftSection={<IconHistory size={16} />}>
-                                    历史记录
+                                    <Text span visibleFrom="sm">历史记录</Text>
                                 </Tabs.Tab>
                             </Tabs.List>
                         </Tabs>

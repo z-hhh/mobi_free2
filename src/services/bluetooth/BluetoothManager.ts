@@ -132,8 +132,12 @@ class BluetoothManager {
     // API for UI
     async setResistance(level: number) {
         if (this.protocol) {
-            await this.protocol.setResistance(level);
-            store.dispatch(addLog({ level: 'info', message: `Set Resistance: ${level}` }));
+            try {
+                await this.protocol.setResistance(level);
+                store.dispatch(addLog({ level: 'info', message: `Set Resistance: ${level} (Success)` }));
+            } catch (err: any) {
+                store.dispatch(addLog({ level: 'error', message: `Set Resistance Failed: ${level}`, data: err }));
+            }
         }
     }
 }
