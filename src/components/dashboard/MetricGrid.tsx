@@ -91,9 +91,13 @@ export function MetricGrid() {
                 return (
                     <>
                         <>
-                            <MetricCard label="距离" value={distance} unit="m" icon={IconRuler2} color="teal" />
-                            <MetricCard label="心率" value={heartRate} unit="bpm" icon={IconHeartbeat} color="red" />
-                            <MetricCard label="阻力" value={resistance} icon={IconBarbell} color="gray" />
+                            <>
+                                <MetricCard label="距离" value={distance} unit="m" icon={IconRuler2} color="teal" />
+                                <MetricCard label="心率" value={heartRate} unit="bpm" icon={IconHeartbeat} color="red" />
+                                <div style={{ gridColumn: 'span 2' }}>
+                                    <MetricCard label="阻力" value={resistance} icon={IconBarbell} color="gray" />
+                                </div>
+                            </>
                         </>
                     </>
                 );

@@ -41,15 +41,24 @@ export function PrimaryGauge() {
         { name: 'rest', value: Math.max(0, max - value) },
     ];
 
-    // Logic for color
-    let color = '#228be6'; // Blue
-    if (value > max * 0.8) color = '#fa5252'; // Red
-    else if (value > max * 0.6) color = '#40c057'; // Green
+    // Logic for color - simplified to use gradient
+    // let color = '#228be6'; 
+    // if (value > max * 0.8) color = '#fa5252'; 
+    // else if (value > max * 0.6) color = '#40c057';
+
+    // Using a gradient ID
+    const gradientId = 'gaugeGradient';
 
     return (
         <Box h={250} w="100%" style={{ position: 'relative' }}>
             <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
+                    <defs>
+                        <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="0">
+                            <stop offset="0%" stopColor="#228be6" />
+                            <stop offset="100%" stopColor="#40c057" />
+                        </linearGradient>
+                    </defs>
                     <Pie
                         data={data}
                         cx="50%"
@@ -60,9 +69,8 @@ export function PrimaryGauge() {
                         outerRadius={100}
                         paddingAngle={0}
                         dataKey="value"
-                        stroke="none"
                     >
-                        <Cell fill={color} />
+                        <Cell fill={`url(#${gradientId})`} />
                         <Cell fill="#e9ecef" />
                     </Pie>
                 </PieChart>
