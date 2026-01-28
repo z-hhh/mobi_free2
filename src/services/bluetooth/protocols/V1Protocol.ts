@@ -73,12 +73,14 @@ export class V1Protocol implements DeviceProtocol {
         }
 
         // Parse data based on common V1 protocol structure
-        // Note: These positions are estimated and may need adjustment
+        // Note: These positions are based on actual device data analysis
         const parsedData: ParsedData = {};
 
-        // Resistance (byte 5 is commonly used, also needed for write-back)
-        if (bytes.length > 5) {
-            parsedData.resistance = bytes[5];
+        // Resistance - Based on actual device data, it's at byte[13]
+        // Data format: ab 04 11 0b 11 00 01 00 00 03 1a 00 8a [09] 00
+        //                                                      ↑ byte[13]
+        if (bytes.length > 13) {
+            parsedData.resistance = bytes[13];
         }
 
         // Time (bytes 3-4, typically in seconds, big-endian)
