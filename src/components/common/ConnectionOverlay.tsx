@@ -1,13 +1,16 @@
 import { Modal, Button, Text, Stack, Loader, Group, Badge, Alert } from '@mantine/core';
 import { useBluetooth } from '../../hooks/useBluetooth';
-import { IconBluetooth, IconAlertCircle, IconCopy, IconCheck } from '@tabler/icons-react';
+import { IconBluetooth, IconAlertCircle, IconCopy, IconCheck, IconBolt } from '@tabler/icons-react';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import { useState } from 'react';
+import { bluetoothManager } from '../../services/bluetooth/BluetoothManager';
 
 export function ConnectionOverlay() {
     const { status, scan, device, error } = useBluetooth();
     const logs = useSelector((state: RootState) => state.log.logs);
+    const settings = useSelector((state: RootState) => state.settings);
+    const lastDeviceId = useSelector((state: RootState) => state.device.lastDeviceId);
     const [copied, setCopied] = useState(false);
 
     // Check if Web Bluetooth API is available
@@ -93,9 +96,29 @@ ${logsText}`;
                 {isBluetoothSupported && (
                     <>
                         {status === 'disconnected' && (
-                            <Button size="xl" onClick={scan} leftSection={<IconBluetooth />}>
-                                扫描设备
-                            </Button>
+                            <Stack align="center" gap="md">
+                                {/* 快速连接按钮 - 如果启用了记住设备且有上次连接记录 */}
+                                {settings.app.rememberDevice && lastDeviceId && (
+                                    <Button
+                                        size="xl"
+                                        onClick={() => bluetoothManager.quickReconnect(lastDeviceId)}
+                                        leftSection={<IconBolt />}
+                                        variant="gradient"
+                                        gradient={{ from: 'cyan', to: 'blue' }}
+                                    >
+                                        快速连接
+                                    </Button>
+                                )}
+
+                                <Button
+                                    size="lg"
+                                    onClick={scan}
+                                    leftSection={<IconBluetooth />}
+                                    variant={settings.app.rememberDevice && lastDeviceId ? 'outline' : 'filled'}
+                                >
+                                    扫描设备
+                                </Button>
+                            </Stack>
                         )}
 
                         {(status === 'scanning' || status === 'connecting') && (

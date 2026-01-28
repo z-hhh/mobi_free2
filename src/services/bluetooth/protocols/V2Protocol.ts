@@ -200,14 +200,15 @@ export class V2Protocol implements DeviceProtocol {
         for (const char of this.dataChars.values()) {
             try {
                 char.removeEventListener('characteristicvaluechanged', this.handleDataNotification);
-                char.stopNotifications();
+                // Don't await - device might already be disconnected
+                char.stopNotifications().catch(() => { /* ignore */ });
             } catch (e) { /* ignore */ }
         }
 
         if (this.controlChar) {
             try {
                 this.controlChar.removeEventListener('characteristicvaluechanged', this.handleControlResponse);
-                this.controlChar.stopNotifications();
+                this.controlChar.stopNotifications().catch(() => { /* ignore */ });
             } catch (e) { /* ignore */ }
         }
 

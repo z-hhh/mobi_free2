@@ -188,6 +188,61 @@ class BluetoothManager {
             }
         }
     }
+
+    /**
+     * Quick reconnect to last device
+     * Uses navigator.bluetooth.getDevices() to find previously paired devices
+     */
+    async quickReconnect(lastDeviceId: string) {
+        try {
+            // Check if getDevices API is supported
+            if (!navigator.bluetooth.getDevices) {
+                store.dispatch(addLog({
+                    level: 'warn',
+                    message: 'Quick reconnect not supported in this browser, using device picker...'
+                }));
+                await this.scan();
+                return;
+            }
+
+            store.dispatch(setConnectionStatus('scanning'));
+            store.dispatch(addLog({ level: 'info', message: 'Attempting quick reconnect...' }));
+
+            // Get previously authorized devices
+            const devices = await navigator.bluetooth.getDevices();
+
+            if (devices.length === 0) {
+                throw new Error('No previously authorized devices found');
+            }
+
+            // Find the device by ID
+            const targetDevice = devices.find(d => d.id === lastDeviceId);
+
+            if (!targetDevice) {
+                store.dispatch(addLog({
+                    level: 'warn',
+                    message: `Device ${lastDeviceId} not found, showing device picker...`
+                }));
+                // Fallback to regular scan
+                await this.scan();
+                return;
+            }
+
+            store.dispatch(addLog({ level: 'info', message: `Quick reconnecting to: ${targetDevice.name}` }));
+
+            this.device = targetDevice;
+            await this.connect(targetDevice);
+
+        } catch (error: any) {
+            // If getDevices is not supported or fails, fallback to regular scan
+            const errorMessage = error?.message || String(error);
+            store.dispatch(addLog({
+                level: 'warn',
+                message: 'Quick reconnect failed, falling back to device picker: ' + errorMessage
+            }));
+            await this.scan();
+        }
+    }
 }
 
 export const bluetoothManager = new BluetoothManager();
