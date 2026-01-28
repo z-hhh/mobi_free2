@@ -15,6 +15,10 @@ export const BLE_UUIDS = {
     V2_DATA_ALL: '00008813-0000-1000-8000-00805f9b34fb',
     V2_INTERVAL: '00008811-0000-1000-8000-00805f9b34fb',
 
+    // Characteristics (V1)
+    V1_WRITE: '0000ffe3-0000-1000-8000-00805f9b34fb',
+    V1_DATA: '0000ffe4-0000-1000-8000-00805f9b34fb',
+
     // Device Info Characteristics
     MANUFACTURER_NAME: '00002a29-0000-1000-8000-00805f9b34fb',
     MODEL_NUMBER: '00002a24-0000-1000-8000-00805f9b34fb',
@@ -26,4 +30,9 @@ export const BLE_UUIDS = {
 // V2 Commands
 export const V2_COMMANDS = {
     UNLOCK_INSTRUCTION: new Uint8Array([0x11, 0x82, 0x07]),
+};
+
+export const V1_CONSTANTS = {
+    FRAME_HEADER: 0xAB, // -85 in Java
+    CMD_RESISTANCE: 0x03,
 };
