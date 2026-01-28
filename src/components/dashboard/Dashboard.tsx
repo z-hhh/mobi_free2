@@ -1,5 +1,6 @@
 import { Container, Stack, Overlay, Center, Text, Button } from '@mantine/core';
 import { useWorkout } from '../../hooks/useWorkout';
+import { useWorkoutTimer } from '../../hooks/useWorkoutTimer';
 import { ActivityHeader } from './ActivityHeader';
 import { PrimaryGauge } from './PrimaryGauge';
 import { MetricGrid } from './MetricGrid';
@@ -10,6 +11,9 @@ import { togglePause } from '../../store/workoutSlice';
 export function Dashboard() {
     const { isPaused } = useWorkout();
     const dispatch = useDispatch();
+
+    // Auto-increment workout duration
+    useWorkoutTimer();
 
     return (
         <Container p="md" h="calc(100vh - 60px)" style={{ position: 'relative' }}>
