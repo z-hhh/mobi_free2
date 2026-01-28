@@ -24,7 +24,7 @@ class BluetoothManager {
             store.dispatch(addLog({ level: 'info', message: 'Starting Scan...' }));
 
             const device = await navigator.bluetooth.requestDevice({
-                filters: [{ namePrefix: 'Mobi' }, { namePrefix: 'MB' }],
+                filters: [{ namePrefix: 'Mobi' }, { namePrefix: 'MB' }, { namePrefix: 'MOBI' }],
                 optionalServices: [
                     BLE_UUIDS.V2_SERVICE,
                     BLE_UUIDS.V1_SERVICE,
