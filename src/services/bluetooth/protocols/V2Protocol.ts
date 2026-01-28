@@ -131,6 +131,33 @@ export class V2Protocol implements DeviceProtocol {
         // Parse based on characteristic type
         if (uuid === BLE_UUIDS.V2_RESISTANCE && bytes.length > 0) {
             parsedData.resistance = bytes[0];
+        } else if (uuid === BLE_UUIDS.V2_INTERVAL && bytes.length >= 2) {
+            // Parse interval data (8811) - used to calculate RPM/SPM
+            // Format: [interval_high, interval_low, count_high?, count_low?]
+            // interval is in milliseconds (big-endian)
+            const intervalMs = (bytes[0] << 8) | bytes[1];
+
+            if (intervalMs > 0) {
+                // Calculate RPM: (60 seconds / interval_in_seconds) = RPM
+                // RPM = (60.0 / intervalMs) * 1000 / numberMagnets
+                // Assuming numberMagnets = 1 for most elliptical machines
+                const numberMagnets = 1;
+                const rpm = ((60.0 / intervalMs) * 1000) / numberMagnets;
+
+                // For elliptical machines, RPM is same as SPM (steps per minute)
+                parsedData.rpm = Math.round(rpm);
+                parsedData.spm = Math.round(rpm);
+            } else {
+                // intervalMs = 0 means machine is idle
+                parsedData.rpm = 0;
+                parsedData.spm = 0;
+            }
+
+            // Optional: parse count if present (bytes 2-3)
+            if (bytes.length >= 4) {
+                const count = (bytes[2] << 8) | bytes[3];
+                this.log('debug', `V2 Interval: ${intervalMs}ms, count: ${count}`);
+            }
         } else if (uuid === BLE_UUIDS.V2_DATA_ALL) {
             // Parse comprehensive data packet (8813)
             // Structure needs to be determined from actual device data

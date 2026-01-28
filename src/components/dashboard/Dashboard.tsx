@@ -1,6 +1,7 @@
 import { Container, Stack, Overlay, Center, Text, Button } from '@mantine/core';
 import { useWorkout } from '../../hooks/useWorkout';
 import { useWorkoutTimer } from '../../hooks/useWorkoutTimer';
+import { useEllipticalCalculator } from '../../hooks/useEllipticalCalculator';
 import { ActivityHeader } from './ActivityHeader';
 import { PrimaryGauge } from './PrimaryGauge';
 import { MetricGrid } from './MetricGrid';
@@ -14,6 +15,9 @@ export function Dashboard() {
 
     // Auto-increment workout duration
     useWorkoutTimer();
+
+    // Calculate distance, calories, speed, power for V2 protocol
+    useEllipticalCalculator();
 
     return (
         <Container p="md" h="calc(100vh - 60px)" style={{ position: 'relative' }}>

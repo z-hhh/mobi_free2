@@ -55,7 +55,7 @@ export function MetricGrid() {
                 return (
                     <>
                         <MetricCard label="速度" value={speed.toFixed(1)} unit="km/h" icon={IconGauge} color="cyan" />
-                        <MetricCard label="距离" value={(distance / 1000).toFixed(2)} unit="km" icon={IconRuler2} color="teal" />
+                        <MetricCard label="距离" value={distance.toFixed(2)} unit="km" icon={IconRuler2} color="teal" />
                         <MetricCard label="阻力" value={resistance} icon={IconBarbell} color="gray" />
                         <MetricCard label="功率" value={power} unit="w" icon={IconBolt} color="yellow" />
                     </>
@@ -63,7 +63,7 @@ export function MetricGrid() {
             case 'elliptical':
                 return (
                     <>
-                        <MetricCard label="距离" value={(distance / 1000).toFixed(2)} unit="km" icon={IconRuler2} color="teal" />
+                        <MetricCard label="距离" value={distance.toFixed(2)} unit="km" icon={IconRuler2} color="teal" />
                         <MetricCard label="速度" value={speed.toFixed(1)} unit="km/h" icon={IconGauge} color="cyan" />
                         <MetricCard label="阻力" value={resistance} icon={IconBarbell} color="gray" />
                     </>
@@ -72,7 +72,7 @@ export function MetricGrid() {
                 return (
                     <>
                         <MetricCard label="坡度" value={incline} unit="%" icon={IconTrendingUp} color="orange" />
-                        <MetricCard label="距离" value={(distance / 1000).toFixed(2)} unit="km" icon={IconRuler2} color="teal" />
+                        <MetricCard label="距离" value={distance.toFixed(2)} unit="km" icon={IconRuler2} color="teal" />
                         <MetricCard label="配速" value={speed > 0 ? (60 / speed).toFixed(2) : '--'} unit="min/km" icon={IconClock} color="indigo" />
                     </>
                 );
@@ -80,7 +80,7 @@ export function MetricGrid() {
                 // Generic fallback
                 return (
                     <>
-                        <MetricCard label="距离" value={distance} unit="m" icon={IconRuler2} color="teal" />
+                        <MetricCard label="距离" value={distance.toFixed(2)} unit="km" icon={IconRuler2} color="teal" />
                         <MetricCard label="阻力" value={resistance} icon={IconBarbell} color="gray" />
                     </>
                 );
