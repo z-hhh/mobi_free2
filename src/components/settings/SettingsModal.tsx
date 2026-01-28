@@ -1,7 +1,7 @@
-import { Modal, NumberInput, SegmentedControl, Switch, Select, Text, Stack, Button, Group } from '@mantine/core';
+import { Modal, NumberInput, SegmentedControl, Switch, Select, Text, Stack, Group } from '@mantine/core';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../store';
-import { updateWeight, setBoatType, setTheme, setAutoConnect } from '../../store/settingsSlice';
+import { updateWeight, setBoatType, setTheme, setRememberDevice } from '../../store/settingsSlice';
 import { useBluetooth } from '../../hooks/useBluetooth';
 
 interface Props {
@@ -13,10 +13,6 @@ export function SettingsModal({ opened, onClose }: Props) {
     const dispatch = useDispatch();
     const settings = useSelector((state: RootState) => state.settings);
     const { device } = useBluetooth();
-
-    // Decide if we show Boat Type (only if Rower)
-    // Or simpler: always show but disabled? No, show if setting "rower" is relevant.
-    // We'll show it under "Rower Settings" section
 
     return (
         <Modal opened={opened} onClose={onClose} title="设置" centered>
@@ -59,10 +55,13 @@ export function SettingsModal({ opened, onClose }: Props) {
                     </Group>
 
                     <Group justify="space-between">
-                        <Text size="sm">自动连接</Text>
+                        <div>
+                            <Text size="sm">记住设备</Text>
+                            <Text size="xs" c="dimmed">下次显示快速连接按钮</Text>
+                        </div>
                         <Switch
-                            checked={settings.app.autoConnect}
-                            onChange={(e) => dispatch(setAutoConnect(e.currentTarget.checked))}
+                            checked={settings.app.rememberDevice}
+                            onChange={(e) => dispatch(setRememberDevice(e.currentTarget.checked))}
                         />
                     </Group>
                 </Stack>

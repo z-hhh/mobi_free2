@@ -18,6 +18,7 @@ interface DeviceState {
     deviceInfo: DeviceInfo;
     protocolVersion: 'v1' | 'v2' | 'ftms' | null;
     supportedEquipment: 'rower' | 'bike' | 'elliptical' | 'treadmill' | 'unknown';
+    lastDeviceId: string | null; // Remember last connected device ID for quick reconnect
 }
 
 const initialState: DeviceState = {
@@ -26,6 +27,7 @@ const initialState: DeviceState = {
     deviceInfo: { name: null, id: null },
     protocolVersion: null,
     supportedEquipment: 'unknown',
+    lastDeviceId: null,
 };
 
 const deviceSlice = createSlice({
@@ -37,6 +39,10 @@ const deviceSlice = createSlice({
         },
         setDeviceInfo: (state, action: PayloadAction<Partial<DeviceInfo>>) => {
             state.deviceInfo = { ...state.deviceInfo, ...action.payload };
+            // Remember device ID when connected
+            if (action.payload.id) {
+                state.lastDeviceId = action.payload.id;
+            }
         },
         setProtocol: (state, action: PayloadAction<DeviceState['protocolVersion']>) => {
             state.protocolVersion = action.payload;
@@ -52,8 +58,11 @@ const deviceSlice = createSlice({
             state.protocolVersion = null;
             state.error = null;
         },
+        clearLastDevice: (state) => {
+            state.lastDeviceId = null;
+        },
     },
 });
 
-export const { setConnectionStatus, setDeviceInfo, setProtocol, setEquipmentType, setError, disconnect } = deviceSlice.actions;
+export const { setConnectionStatus, setDeviceInfo, setProtocol, setEquipmentType, setError, disconnect, clearLastDevice } = deviceSlice.actions;
 export default deviceSlice.reducer;

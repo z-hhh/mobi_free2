@@ -9,14 +9,14 @@ interface SettingsState {
     };
     app: {
         theme: 'light' | 'dark' | 'auto';
-        autoConnect: boolean;
+        rememberDevice: boolean;
     };
 }
 
 const initialState: SettingsState = {
     userProfile: { weightKg: 70 },
     rower: { boatType: 'water' },
-    app: { theme: 'auto', autoConnect: false },
+    app: { theme: 'auto', rememberDevice: true },
 };
 
 const settingsSlice = createSlice({
@@ -32,8 +32,8 @@ const settingsSlice = createSlice({
         setTheme: (state, action: PayloadAction<SettingsState['app']['theme']>) => {
             state.app.theme = action.payload;
         },
-        setAutoConnect: (state, action: PayloadAction<boolean>) => {
-            state.app.autoConnect = action.payload;
+        setRememberDevice: (state, action: PayloadAction<boolean>) => {
+            state.app.rememberDevice = action.payload;
         },
         // Hydrate action to load from local storage
         hydrateSettings: (state, action: PayloadAction<Partial<SettingsState>>) => {
@@ -43,5 +43,5 @@ const settingsSlice = createSlice({
     },
 });
 
-export const { updateWeight, setBoatType, setTheme, setAutoConnect, hydrateSettings } = settingsSlice.actions;
+export const { updateWeight, setBoatType, setTheme, setRememberDevice, hydrateSettings } = settingsSlice.actions;
 export default settingsSlice.reducer;
