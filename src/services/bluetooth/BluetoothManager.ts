@@ -18,6 +18,22 @@ class BluetoothManager {
     private device: BluetoothDevice | null = null;
     private protocol: DeviceProtocol | null = null;
 
+    /**
+     * Normalize UUID to full format
+     * Bluefy returns short UUIDs like "FFE0", we need to expand them
+     */
+    private normalizeUUID(uuid: string): string {
+        // Already in full format
+        if (uuid.length > 8) {
+            return uuid.toLowerCase();
+        }
+
+        // Short format (4 chars like "FFE0") - expand to full Bluetooth Base UUID
+        // Format: 0000XXXX-0000-1000-8000-00805f9b34fb
+        const shortUUID = uuid.toLowerCase().padStart(4, '0');
+        return `0000${shortUUID}-0000-1000-8000-00805f9b34fb`;
+    }
+
     async scan() {
         try {
             store.dispatch(setConnectionStatus('scanning'));
@@ -79,25 +95,31 @@ class BluetoothManager {
 
             // Determine Protocol
             const services = await server.getPrimaryServices();
-            const serviceUUIDs = services.map((s: BluetoothRemoteGATTService) => s.uuid);
+            const serviceUUIDs = services.map((s: BluetoothRemoteGATTService) => this.normalizeUUID(s.uuid));
             store.dispatch(addLog({ level: 'debug', message: 'Services found', data: serviceUUIDs }));
 
             let protocol: DeviceProtocol | null = null;
             let version: 'v2' | 'v1' | 'ftms' | null = null;
 
-            if (serviceUUIDs.includes(BLE_UUIDS.V2_SERVICE)) {
+            // Normalize our service UUIDs for comparison
+            const v2Service = this.normalizeUUID(BLE_UUIDS.V2_SERVICE);
+            const v1Service = this.normalizeUUID(BLE_UUIDS.V1_SERVICE);
+            const huantongService = this.normalizeUUID(BLE_UUIDS.HUANTONG_SERVICE);
+            const ftmsService = this.normalizeUUID(BLE_UUIDS.FTMS_SERVICE);
+
+            if (serviceUUIDs.includes(v2Service)) {
                 protocol = new V2Protocol();
                 version = 'v2';
-            } else if (serviceUUIDs.includes(BLE_UUIDS.V1_SERVICE)) {
+            } else if (serviceUUIDs.includes(v1Service)) {
                 protocol = new V1Protocol();
                 version = 'v1';
-            } else if (serviceUUIDs.includes(BLE_UUIDS.HUANTONG_SERVICE)) {
+            } else if (serviceUUIDs.includes(huantongService)) {
                 // Also could check name for 'MOBI-E' etc as per official app
                 protocol = new HuanTongProtocol();
                 version = 'v1'; // Reuse V1 UI logic or add new version type? Let's use 'v1' or 'ftms' for now, or add 'huantong' to types.
                 // Actually, let's stick to 'v1' for state simplicity if it behaves similarly, or add 'huantong'.
                 // Ideally add 'huantong' to types.
-            } else if (serviceUUIDs.includes(BLE_UUIDS.FTMS_SERVICE)) {
+            } else if (serviceUUIDs.includes(ftmsService)) {
                 protocol = new FTMSProtocol();
                 version = 'ftms';
             }
