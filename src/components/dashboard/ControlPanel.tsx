@@ -9,7 +9,7 @@ import { RootState } from '../../store';
 export function ControlPanel() {
     const { manager } = useBluetooth();
     const resistance = useSelector((state: RootState) => state.workout.resistance);
-    const maxResistance = useSelector((state: RootState) => state.device.deviceInfo.id /* temporary placeholder for specs */ ? 32 : 16); // Should get from specs
+    const maxResistance = useSelector((state: RootState) => 24); // Fixed to 24 as per user feedback
 
     // Local state for optimistic UI
     const [localVal, setLocalVal] = useState(resistance);
