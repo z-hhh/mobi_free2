@@ -1,15 +1,44 @@
 import { Modal, Button, Text, Stack, Loader, Group, Badge, Alert } from '@mantine/core';
 import { useBluetooth } from '../../hooks/useBluetooth';
-import { IconBluetooth, IconAlertCircle } from '@tabler/icons-react';
+import { IconBluetooth, IconAlertCircle, IconCopy, IconCheck } from '@tabler/icons-react';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../store';
+import { useState } from 'react';
 
 export function ConnectionOverlay() {
     const { status, scan, device, error } = useBluetooth();
+    const logs = useSelector((state: RootState) => state.log.logs);
+    const [copied, setCopied] = useState(false);
 
     // Check if Web Bluetooth API is available
     const isBluetoothSupported = typeof navigator !== 'undefined' && 'bluetooth' in navigator;
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 
     const isOpen = status !== 'connected';
+
+    const copyLogsToClipboard = async () => {
+        try {
+            // Format logs as text
+            const logsText = logs.map(log => {
+                const data = log.data ? `\nData: ${JSON.stringify(log.data, null, 2)}` : '';
+                return `[${log.timestamp}] [${log.level.toUpperCase()}] ${log.message}${data}`;
+            }).join('\n\n');
+
+            const debugInfo = `=== Mobi Free Debug Logs ===
+Browser: ${navigator.userAgent}
+Time: ${new Date().toISOString()}
+Total Logs: ${logs.length}
+Last Error: ${error || 'None'}
+
+${logsText}`;
+
+            await navigator.clipboard.writeText(debugInfo);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        } catch (err) {
+            console.error('Failed to copy logs:', err);
+        }
+    };
 
     return (
         <Modal
@@ -80,7 +109,17 @@ export function ConnectionOverlay() {
                             <Stack align="center">
                                 <Text c="red">连接失败</Text>
                                 <Text size="sm" c="dimmed">{error}</Text>
-                                <Button onClick={scan} variant="outline" color="red">重试</Button>
+                                <Group>
+                                    <Button onClick={scan} variant="outline" color="red">重试</Button>
+                                    <Button
+                                        onClick={copyLogsToClipboard}
+                                        variant="outline"
+                                        leftSection={copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
+                                        color={copied ? 'green' : 'gray'}
+                                    >
+                                        {copied ? '已复制' : '复制调试日志'}
+                                    </Button>
+                                </Group>
                             </Stack>
                         )}
                     </>
@@ -89,6 +128,20 @@ export function ConnectionOverlay() {
                 <Text size="sm" c="dimmed" mt="xl">
                     支持设备：划船机、单车、椭圆机、跑步机
                 </Text>
+
+                {/* 复制日志按钮 - 显示在底部 */}
+                {isBluetoothSupported && status !== 'error' && logs.length > 0 && (
+                    <Button
+                        variant="subtle"
+                        size="sm"
+                        onClick={copyLogsToClipboard}
+                        leftSection={copied ? <IconCheck size={14} /> : <IconCopy size={14} />}
+                        color={copied ? 'green' : 'gray'}
+                        style={{ position: 'absolute', bottom: '2rem' }}
+                    >
+                        {copied ? '已复制调试日志' : '复制调试日志'}
+                    </Button>
+                )}
             </Stack>
         </Modal>
     );
