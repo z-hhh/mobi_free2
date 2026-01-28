@@ -1,4 +1,4 @@
-import { AppShell, Burger, Group, Text, Image, ActionIcon, Tooltip, Tabs, Badge } from '@mantine/core';
+import { AppShell, Group, Text, Image, ActionIcon, Tooltip, Tabs, Badge, Menu } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { useState } from 'react';
 import { useDispatch } from 'react-redux';
@@ -11,14 +11,15 @@ import { HistoryView } from '../components/history/HistoryView';
 import { SettingsModal } from '../components/settings/SettingsModal';
 import { DebugDrawer } from '../components/debug/DebugDrawer';
 import { ConnectionOverlay } from '../components/common/ConnectionOverlay';
+import { DonateModal } from '../components/common/DonateModal';
 
 import { useBluetooth } from '../hooks/useBluetooth';
 import { bluetoothManager } from '../services/bluetooth/BluetoothManager';
-import { IconSettings, IconBug, IconLayoutDashboard, IconHistory, IconPlugConnectedX, IconBrandGithub } from '@tabler/icons-react';
+import { IconSettings, IconLayoutDashboard, IconHistory, IconPlugConnectedX, IconBrandGithub, IconHeart, IconDots, IconBug } from '@tabler/icons-react';
 
 export function AppLayout() {
-    const [opened, { toggle }] = useDisclosure();
     const [settingsOpen, { open: openSettings, close: closeSettings }] = useDisclosure(false);
+    const [donateOpen, { open: openDonate, close: closeDonate }] = useDisclosure(false);
     const [view, setView] = useState<string | null>('dashboard');
     const dispatch = useDispatch();
     const { device, status } = useBluetooth();
@@ -64,30 +65,50 @@ export function AppLayout() {
                             </Group>
                         )}
 
-                        <Tooltip label="调试">
-                            <ActionIcon variant="light" size="lg" onClick={() => dispatch(setDebugOpen(true))}>
-                                <IconBug size={20} />
-                            </ActionIcon>
-                        </Tooltip>
+                        {/* 更多菜单 - 整合次要功能 */}
+                        <Menu shadow="md" width={200}>
+                            <Menu.Target>
+                                <Tooltip label="更多">
+                                    <ActionIcon variant="light" size="lg">
+                                        <IconDots size={20} />
+                                    </ActionIcon>
+                                </Tooltip>
+                            </Menu.Target>
 
-                        <Tooltip label="GitHub 仓库">
-                            <ActionIcon
-                                variant="light"
-                                size="lg"
-                                component="a"
-                                href="https://github.com/z-hhh/mobi_free2"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                            >
-                                <IconBrandGithub size={20} />
-                            </ActionIcon>
-                        </Tooltip>
+                            <Menu.Dropdown>
+                                <Menu.Item
+                                    leftSection={<IconHeart size={16} />}
+                                    onClick={openDonate}
+                                >
+                                    捐赠支持
+                                </Menu.Item>
 
-                        <Tooltip label="设置">
-                            <ActionIcon variant="light" size="lg" onClick={openSettings}>
-                                <IconSettings size={20} />
-                            </ActionIcon>
-                        </Tooltip>
+                                <Menu.Item
+                                    leftSection={<IconBrandGithub size={16} />}
+                                    component="a"
+                                    href="https://github.com/z-hhh/mobi_free2"
+                                    target="_blank"
+                                >
+                                    GitHub 仓库
+                                </Menu.Item>
+
+                                <Menu.Divider />
+
+                                <Menu.Item
+                                    leftSection={<IconBug size={16} />}
+                                    onClick={() => dispatch(setDebugOpen(true))}
+                                >
+                                    调试日志
+                                </Menu.Item>
+
+                                <Menu.Item
+                                    leftSection={<IconSettings size={16} />}
+                                    onClick={openSettings}
+                                >
+                                    设置
+                                </Menu.Item>
+                            </Menu.Dropdown>
+                        </Menu>
                     </Group>
                 </Group>
             </AppShell.Header>
@@ -98,6 +119,7 @@ export function AppLayout() {
             </AppShell.Main>
 
             <SettingsModal opened={settingsOpen} onClose={closeSettings} />
+            <DonateModal opened={donateOpen} onClose={closeDonate} />
             <DebugDrawer />
             <ConnectionOverlay />
         </AppShell>
