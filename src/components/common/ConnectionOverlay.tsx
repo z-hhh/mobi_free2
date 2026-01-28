@@ -11,6 +11,7 @@ export function ConnectionOverlay() {
     const logs = useSelector((state: RootState) => state.log.logs);
     const settings = useSelector((state: RootState) => state.settings);
     const lastDeviceId = useSelector((state: RootState) => state.device.lastDeviceId);
+    const lastDeviceName = useSelector((state: RootState) => state.device.lastDeviceName);
     const [copied, setCopied] = useState(false);
 
     // Check if Web Bluetooth API is available
@@ -106,7 +107,7 @@ ${logsText}`;
                                         variant="gradient"
                                         gradient={{ from: 'cyan', to: 'blue' }}
                                     >
-                                        快速连接
+                                        连接到 {lastDeviceName || '上次设备'}
                                     </Button>
                                 )}
 
@@ -114,9 +115,10 @@ ${logsText}`;
                                     size="lg"
                                     onClick={scan}
                                     leftSection={<IconBluetooth />}
-                                    variant={settings.app.rememberDevice && lastDeviceId ? 'outline' : 'filled'}
+                                    variant={settings.app.rememberDevice && lastDeviceId ? 'subtle' : 'filled'}
+                                    color={settings.app.rememberDevice && lastDeviceId ? 'gray' : 'blue'}
                                 >
-                                    扫描设备
+                                    {settings.app.rememberDevice && lastDeviceId ? '连接其他设备' : '扫描设备'}
                                 </Button>
                             </Stack>
                         )}

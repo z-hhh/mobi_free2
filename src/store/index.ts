@@ -1,17 +1,21 @@
 import { configureStore } from '@reduxjs/toolkit';
 import logReducer from './logSlice';
-import deviceReducer from './deviceSlice';
+import deviceReducer, { hydrateDevice } from './deviceSlice';
 import workoutReducer from './workoutSlice';
 import settingsReducer, { hydrateSettings } from './settingsSlice';
 
-// Load settings from localStorage
-const loadSettings = () => {
+// Load persisted state from localStorage
+const loadState = () => {
     try {
-        const serialized = localStorage.getItem('mobi_settings');
-        if (serialized === null) return undefined;
-        return JSON.parse(serialized);
+        const settingsSerialized = localStorage.getItem('mobi_settings');
+        const deviceSerialized = localStorage.getItem('mobi_device');
+
+        return {
+            settings: settingsSerialized ? JSON.parse(settingsSerialized) : undefined,
+            device: deviceSerialized ? JSON.parse(deviceSerialized) : undefined,
+        };
     } catch (e) {
-        return undefined;
+        return { settings: undefined, device: undefined };
     }
 };
 
@@ -25,15 +29,28 @@ export const store = configureStore({
 });
 
 // Hydrate on start
-const savedSettings = loadSettings();
-if (savedSettings) {
-    store.dispatch(hydrateSettings(savedSettings));
+const savedState = loadState();
+if (savedState.settings) {
+    store.dispatch(hydrateSettings(savedState.settings));
+}
+if (savedState.device) {
+    // Only hydrate the persisted fields (lastDeviceId, lastDeviceName)
+    store.dispatch(hydrateDevice(savedState.device));
 }
 
-// Save settings on change
+// Save state changes
 store.subscribe(() => {
-    const settings = store.getState().settings;
-    localStorage.setItem('mobi_settings', JSON.stringify(settings));
+    const state = store.getState();
+
+    // Save settings
+    localStorage.setItem('mobi_settings', JSON.stringify(state.settings));
+
+    // Save only necessary device info
+    const deviceStateToSave = {
+        lastDeviceId: state.device.lastDeviceId,
+        lastDeviceName: state.device.lastDeviceName
+    };
+    localStorage.setItem('mobi_device', JSON.stringify(deviceStateToSave));
 });
 
 export type RootState = ReturnType<typeof store.getState>;
