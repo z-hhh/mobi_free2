@@ -16,6 +16,7 @@ export function Dashboard() {
             <Stack h="100%" justify="space-between">
                 <ActivityHeader />
                 <PrimaryGauge />
+                <ControlPanel />
                 <MetricGrid />
             </Stack>
 

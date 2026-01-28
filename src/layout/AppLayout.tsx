@@ -35,11 +35,6 @@ export function AppLayout() {
                         <Text fw={700} size="lg" variant="gradient" gradient={{ from: 'cyan', to: 'blue', deg: 45 }} visibleFrom="xs">
                             Mobi Free
                         </Text>
-                        {status === 'connected' && device && (
-                            <Badge variant="light" color="green" size="lg" leftSection={<Text span>🔗</Text>}>
-                                {device.name}
-                            </Badge>
-                        )}
                     </Group>
 
                     <Group>
@@ -54,6 +49,21 @@ export function AppLayout() {
                             </Tabs.List>
                         </Tabs>
 
+                        {status === 'connected' && (
+                            <Group gap={5}>
+                                {device && (
+                                    <Badge variant="light" color="green" size="lg" leftSection={<Text span>🔗</Text>} visibleFrom="xs">
+                                        {device.name}
+                                    </Badge>
+                                )}
+                                <Tooltip label="Disconnect">
+                                    <ActionIcon variant="light" color="red" size="lg" onClick={() => bluetoothManager.disconnect()}>
+                                        <IconPlugConnectedX size={20} />
+                                    </ActionIcon>
+                                </Tooltip>
+                            </Group>
+                        )}
+
                         <Tooltip label="Debug">
                             <ActionIcon variant="light" size="lg" onClick={() => dispatch(setDebugOpen(true))}>
                                 <IconBug size={20} />
@@ -65,14 +75,6 @@ export function AppLayout() {
                                 <IconSettings size={20} />
                             </ActionIcon>
                         </Tooltip>
-
-                        {status === 'connected' && (
-                            <Tooltip label="Disconnect">
-                                <ActionIcon variant="light" color="red" size="lg" onClick={() => bluetoothManager.disconnect()}>
-                                    <IconPlugConnectedX size={20} />
-                                </ActionIcon>
-                            </Tooltip>
-                        )}
                     </Group>
                 </Group>
             </AppShell.Header>
