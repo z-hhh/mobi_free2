@@ -13,7 +13,7 @@ export function useWorkoutTimer() {
     const { connectionStatus } = useSelector((state: RootState) => state.device);
     const { isPaused, speed, spm, rpm, duration } = useSelector((state: RootState) => state.workout);
 
-    const timerRef = useRef<NodeJS.Timeout | null>(null);
+    const timerRef = useRef<number | null>(null);
     const startTimeRef = useRef<number>(0);
     const accumulatedTimeRef = useRef<number>(0);
 
