@@ -1,5 +1,6 @@
 export interface ParsedData {
     time?: number; // seconds
+    duration?: number; // seconds (elapsed time)
     distance?: number; // meters
     speed?: number; // km/h (or m/s depending on usage, standardize on storage)
     rpm?: number;

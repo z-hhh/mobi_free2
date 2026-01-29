@@ -107,12 +107,8 @@ class BluetoothManager {
             const huantongService = this.normalizeUUID(BLE_UUIDS.HUANTONG_SERVICE);
             const ftmsService = this.normalizeUUID(BLE_UUIDS.FTMS_SERVICE);
 
-            // Priority: FTMS > V2 > V1 > HuanTong
-            // FTMS is prioritized because it provides more complete data
-            if (serviceUUIDs.includes(ftmsService)) {
-                protocol = new FTMSProtocol();
-                version = 'ftms';
-            } else if (serviceUUIDs.includes(v2Service)) {
+            // Priority: V2 > V1 > HuanTong > FTMS (same as mobi-official)
+            if (serviceUUIDs.includes(v2Service)) {
                 protocol = new V2Protocol();
                 version = 'v2';
             } else if (serviceUUIDs.includes(v1Service)) {
@@ -121,6 +117,9 @@ class BluetoothManager {
             } else if (serviceUUIDs.includes(huantongService)) {
                 protocol = new HuanTongProtocol();
                 version = 'v1';
+            } else if (serviceUUIDs.includes(ftmsService)) {
+                protocol = new FTMSProtocol();
+                version = 'ftms';
             }
 
             if (!protocol) {

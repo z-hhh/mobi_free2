@@ -10,7 +10,7 @@ import { updateMetrics } from '../store/workoutSlice';
  */
 export function useWorkoutTimer() {
     const dispatch = useDispatch();
-    const { connectionStatus } = useSelector((state: RootState) => state.device);
+    const { connectionStatus, protocolVersion } = useSelector((state: RootState) => state.device);
     const { isPaused, speed, spm, rpm, duration } = useSelector((state: RootState) => state.workout);
 
     const timerRef = useRef<number | null>(null);
@@ -40,10 +40,12 @@ export function useWorkoutTimer() {
                 clearInterval(timerRef.current);
                 timerRef.current = null;
 
-                // Accumulate time when pausing
-                if (isPaused && startTimeRef.current > 0) {
+                // Always accumulate elapsed time when stopping timer
+                // This prevents time from jumping back when activity briefly stops
+                if (startTimeRef.current > 0) {
                     const elapsed = Math.floor((Date.now() - startTimeRef.current) / 1000);
                     accumulatedTimeRef.current += elapsed;
+                    startTimeRef.current = 0; // Reset start time
                 }
             }
         }
@@ -55,7 +57,7 @@ export function useWorkoutTimer() {
                 timerRef.current = null;
             }
         };
-    }, [connectionStatus, isPaused, speed, spm, rpm, dispatch]);
+    }, [connectionStatus, protocolVersion, isPaused, speed, spm, rpm, dispatch]);
 
     // Reset accumulated time when workout is reset (duration becomes 0)
     useEffect(() => {
