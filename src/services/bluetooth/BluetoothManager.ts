@@ -53,7 +53,11 @@ class BluetoothManager {
             } else {
                 // Standard browsers: use filters and optionalServices
                 device = await navigator.bluetooth.requestDevice({
-                    filters: [{ namePrefix: 'Mobi' }, { namePrefix: 'MB' }, { namePrefix: 'MOBI' }],
+                    filters: [
+                        { namePrefix: 'Mobi' },
+                        { namePrefix: 'MB' },
+                        { namePrefix: 'MOBI' }
+                    ],
                     optionalServices: [
                         BLE_UUIDS.V2_SERVICE,
                         BLE_UUIDS.V1_SERVICE,
@@ -149,9 +153,27 @@ class BluetoothManager {
             store.dispatch(setConnectionStatus('connected'));
 
         } catch (error: any) {
-            console.error(error);
-            store.dispatch(setError(error.message));
-            store.dispatch(addLog({ level: 'error', message: 'Connection Failed', data: error }));
+            console.error('Connection error:', error);
+
+            // Extract detailed error information
+            const errorDetails = {
+                name: error?.name,
+                message: error?.message || String(error),
+                code: error?.code,
+                stack: error?.stack,
+                // For DOMException
+                ...(error instanceof DOMException && {
+                    domCode: error.code,
+                    domMessage: error.message
+                })
+            };
+
+            store.dispatch(setError(errorDetails.message));
+            store.dispatch(addLog({
+                level: 'error',
+                message: `Connection Failed: ${errorDetails.message}`,
+                data: errorDetails
+            }));
             store.dispatch(setConnectionStatus('error'));
         }
     }
@@ -233,11 +255,22 @@ class BluetoothManager {
 
         } catch (error: any) {
             // If getDevices is not supported or fails, fallback to regular scan
+            const isBluefy = navigator.userAgent.toLowerCase().includes('bluefy');
             const errorMessage = error?.message || String(error);
+            const errorName = error?.name || 'Unknown';
+
             store.dispatch(addLog({
                 level: 'warn',
-                message: 'Quick reconnect failed, falling back to device picker: ' + errorMessage
+                message: `Quick reconnect failed (${errorName}): ${errorMessage}`,
+                data: {
+                    name: errorName,
+                    message: errorMessage,
+                    code: error?.code,
+                    isBluefy
+                }
             }));
+
+            // Fallback to regular scan (with device picker)
             await this.scan();
         }
     }
