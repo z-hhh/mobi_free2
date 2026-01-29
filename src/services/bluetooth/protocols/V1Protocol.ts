@@ -20,12 +20,14 @@ export class V1Protocol implements DeviceProtocol {
         this.server = server;
         this.service = await server.getPrimaryService(this.serviceUUID);
 
-        // Get Write Characteristic (FFE3)
+        // Get Write Characteristic (FFE3) - Optional (per mobi-official V1Handler)
+        // Some devices (like AT-A30324) have ffe0 service but no ffe3 characteristic
         try {
             this.writeChar = await this.service.getCharacteristic(BLE_UUIDS.V1_WRITE);
+            this.log('info', 'V1: Write Char (FFE3) available');
         } catch (e) {
-            this.log('error', 'V1: Failed to get Write Char (FFE3)', e);
-            throw e;
+            this.log('warn', 'V1: Write Char (FFE3) not available - resistance control disabled');
+            // Don't throw - continue without write capability
         }
 
         // Get Data Characteristic (FFE4) - This is the main one for Elliptical

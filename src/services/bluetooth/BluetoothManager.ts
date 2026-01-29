@@ -111,44 +111,94 @@ class BluetoothManager {
             const huantongService = this.normalizeUUID(BLE_UUIDS.HUANTONG_SERVICE);
             const ftmsService = this.normalizeUUID(BLE_UUIDS.FTMS_SERVICE);
 
-            // Priority: V2 > V1 > HuanTong > FTMS (same as mobi-official)
+            // Build list of available protocols in priority order (V2 > V1 > HuanTong > FTMS)
+            const availableProtocols: Array<{ protocol: DeviceProtocol; version: 'v2' | 'v1' | 'ftms' }> = [];
+
             if (serviceUUIDs.includes(v2Service)) {
-                protocol = new V2Protocol();
-                version = 'v2';
-            } else if (serviceUUIDs.includes(v1Service)) {
-                protocol = new V1Protocol();
-                version = 'v1';
-            } else if (serviceUUIDs.includes(huantongService)) {
-                protocol = new HuanTongProtocol();
-                version = 'v1';
-            } else if (serviceUUIDs.includes(ftmsService)) {
-                protocol = new FTMSProtocol();
-                version = 'ftms';
+                availableProtocols.push({ protocol: new V2Protocol(), version: 'v2' });
+            }
+            if (serviceUUIDs.includes(v1Service)) {
+                availableProtocols.push({ protocol: new V1Protocol(), version: 'v1' });
+            }
+            if (serviceUUIDs.includes(huantongService)) {
+                availableProtocols.push({ protocol: new HuanTongProtocol(), version: 'v1' });
+            }
+            if (serviceUUIDs.includes(ftmsService)) {
+                availableProtocols.push({ protocol: new FTMSProtocol(), version: 'ftms' });
             }
 
-            if (!protocol) {
+            if (availableProtocols.length === 0) {
                 throw new Error('Unsupported Device Protocol');
             }
 
-            this.protocol = protocol;
-            store.dispatch(setProtocol(version));
-            store.dispatch(addLog({ level: 'info', message: `Initializing Protocol: ${version}` }));
+            // Try each protocol in order until one succeeds
+            let lastError: any = null;
+            for (let i = 0; i < availableProtocols.length; i++) {
+                const { protocol: tryProtocol, version: tryVersion } = availableProtocols[i];
 
-            // Setup Callbacks
-            protocol.onData((data) => {
-                store.dispatch(updateMetrics(data));
-            });
+                try {
+                    store.dispatch(addLog({
+                        level: 'info',
+                        message: `Trying Protocol: ${tryVersion} (${i + 1}/${availableProtocols.length})`
+                    }));
 
-            protocol.onError((err) => {
-                store.dispatch(addLog({ level: 'error', message: 'Protocol Error', data: err }));
-            });
+                    // Setup callbacks
+                    tryProtocol.onData((data) => {
+                        store.dispatch(updateMetrics(data));
+                    });
 
-            protocol.onLog((level, message, data) => {
-                store.dispatch(addLog({ level, message, data }));
-            });
+                    tryProtocol.onError((err) => {
+                        store.dispatch(addLog({ level: 'error', message: 'Protocol Error', data: err }));
+                    });
 
-            // Connect Protocol
-            await protocol.connect(server);
+                    tryProtocol.onLog((level, message, data) => {
+                        store.dispatch(addLog({ level, message, data }));
+                    });
+
+                    // Try to connect
+                    await tryProtocol.connect(server);
+
+                    // Success!
+                    protocol = tryProtocol;
+                    version = tryVersion;
+                    this.protocol = protocol;
+                    store.dispatch(setProtocol(version));
+                    store.dispatch(addLog({
+                        level: 'info',
+                        message: `Protocol Connected: ${version}`
+                    }));
+                    break;
+
+                } catch (error: any) {
+                    lastError = error;
+                    const errorMsg = error?.message || String(error);
+                    store.dispatch(addLog({
+                        level: 'warn',
+                        message: `Protocol ${tryVersion} failed: ${errorMsg}`,
+                        data: { error: errorMsg }
+                    }));
+
+                    // Clean up failed protocol
+                    try {
+                        tryProtocol.disconnect();
+                    } catch (e) { /* ignore */ }
+
+                    // If this was the last protocol, throw
+                    if (i === availableProtocols.length - 1) {
+                        throw new Error(`All protocols failed. Last error: ${errorMsg}`);
+                    }
+
+                    // Otherwise, continue to next protocol
+                    store.dispatch(addLog({
+                        level: 'info',
+                        message: `Trying next protocol...`
+                    }));
+                }
+            }
+
+            if (!protocol || !version) {
+                throw lastError || new Error('Failed to connect with any protocol');
+            }
 
             store.dispatch(setConnectionStatus('connected'));
 
