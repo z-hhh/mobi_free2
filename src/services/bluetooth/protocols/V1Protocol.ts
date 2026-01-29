@@ -20,17 +20,8 @@ export class V1Protocol implements DeviceProtocol {
         this.server = server;
         this.service = await server.getPrimaryService(this.serviceUUID);
 
-        // Get Write Characteristic (FFE3) - Optional (per mobi-official V1Handler)
-        // Some devices (like AT-A30324) have ffe0 service but no ffe3 characteristic
-        try {
-            this.writeChar = await this.service.getCharacteristic(BLE_UUIDS.V1_WRITE);
-            this.log('info', 'V1: Write Char (FFE3) available');
-        } catch (e) {
-            this.log('warn', 'V1: Write Char (FFE3) not available - resistance control disabled');
-            // Don't throw - continue without write capability
-        }
-
         // Get Data Characteristic (FFE4) - This is the main one for Elliptical
+        // Try this first to fail fast if device doesn't support V1 data
         try {
             this.dataChar = await this.service.getCharacteristic(BLE_UUIDS.V1_DATA);
             await this.dataChar.startNotifications();
@@ -39,6 +30,17 @@ export class V1Protocol implements DeviceProtocol {
         } catch (e) {
             this.log('error', 'V1: Failed to get Data Char (FFE4)', e);
             throw e;
+        }
+
+        // Get Write Characteristic (FFE3)
+        // This is REQUIRED for true V1 devices. If missing, this device is likely
+        // a HuanTong device with ffe0 service, and should use HuanTong protocol instead.
+        try {
+            this.writeChar = await this.service.getCharacteristic(BLE_UUIDS.V1_WRITE);
+            this.log('info', 'V1: Write Char (FFE3) available');
+        } catch (e) {
+            this.log('warn', 'V1: No Write Char (FFE3) - Not a true V1 device');
+            throw new Error('V1 Protocol: FFE3 characteristic required but not found. Device may be HuanTong protocol.');
         }
 
         this.log('info', 'V1Protocol: Connected');
