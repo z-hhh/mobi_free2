@@ -3,6 +3,7 @@ import logReducer from './logSlice';
 import deviceReducer, { hydrateDevice } from './deviceSlice';
 import workoutReducer from './workoutSlice';
 import settingsReducer, { hydrateSettings } from './settingsSlice';
+import { timerMiddleware } from './timerMiddleware';
 
 // Load persisted state from localStorage
 const loadState = () => {
@@ -26,6 +27,8 @@ export const store = configureStore({
         workout: workoutReducer,
         settings: settingsReducer,
     },
+    middleware: (getDefaultMiddleware) =>
+        getDefaultMiddleware().concat(timerMiddleware),
 });
 
 // Hydrate on start
