@@ -39,10 +39,42 @@ export class HuanTongProtocol implements DeviceProtocol {
             throw e;
         }
 
-        // Start Heartbeat
+        // Send initialization command (per official HuanTongHandler line 189)
+        // Command: [0x40, 0x00, age_in_lbs, weight_in_kg, checksum]
+        await this.sendInitCommand();
+
+        // Start Heartbeat after successful initialization
         this.startHeartbeat();
 
-        console.log('HuanTongProtocol: Connected');
+        this.log('info', 'HuanTongProtocol: Connected');
+    }
+
+    /**
+     * Send initialization command with user parameters
+     * Per official HuanTongHandler line 184-210
+     */
+    private async sendInitCommand(): Promise<void> {
+        const DEFAULT_AGE = 30;  // Default age if not available
+        const DEFAULT_WEIGHT = 70; // Default weight in kg if not available
+
+        // Convert age to pounds-like value (per official: age * 2.2046226)
+        const ageParam = Math.round(DEFAULT_AGE * 2.2046226);
+        const weightParam = DEFAULT_WEIGHT;
+
+        // Command: [0x40, 0x00, ageParam, weightParam, checksum]
+        const b1 = 0x40;
+        const b2 = 0x00;
+        const checksum = (b1 + b2 + ageParam + weightParam) % 256;
+
+        const cmd = new Uint8Array([b1, b2, ageParam, weightParam, checksum]);
+
+        try {
+            await this.writeChar?.writeValue(cmd);
+            this.log('info', 'HuanTong: Initialization command sent');
+        } catch (e) {
+            this.log('error', 'HuanTong: Failed to send init command', e);
+            throw e;
+        }
     }
 
     private handleDataNotify = (event: Event) => {
