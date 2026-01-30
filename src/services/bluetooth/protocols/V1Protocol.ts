@@ -32,19 +32,36 @@ export class V1Protocol implements DeviceProtocol {
             throw e;
         }
 
-        // Get Write Characteristic (FFE3)
-        // This is REQUIRED for true V1 devices. If missing, this device is likely
-        // a HuanTong device with ffe0 service, and should use HuanTong protocol instead.
+        // Get Write Characteristic
+        // First try standard FFE3
         try {
             this.writeChar = await this.service.getCharacteristic(BLE_UUIDS.V1_WRITE);
             this.log('info', 'V1: Write Char (FFE3) available');
         } catch (e) {
-            this.log('warn', 'V1: No Write Char (FFE3) - Not a true V1 device');
-            throw new Error('V1 Protocol: FFE3 characteristic required but not found. Device may be HuanTong protocol.');
+            this.log('warn', 'V1: FFE3 not found, searching for alternative write char...');
+
+            // Fallback: Search for ANY writable characteristic in the service
+            try {
+                const chars = await this.service.getCharacteristics();
+                const altWriteChar = chars.find(c => c.properties.write || c.properties.writeWithoutResponse);
+
+                if (altWriteChar) {
+                    this.writeChar = altWriteChar;
+                    this.log('info', `V1: Found alternative write char: ${altWriteChar.uuid}`);
+                } else {
+                    this.log('warn', 'V1: No writable characteristic found in service');
+                    throw new Error('V1 Protocol: No writable characteristic found (checked FFE3 and others)');
+                }
+            } catch (scanError) {
+                this.log('error', 'V1: Failed to scan for write char', scanError);
+                throw new Error('V1 Protocol: Failed to find write characteristic');
+            }
         }
 
         this.log('info', 'V1Protocol: Connected');
     }
+
+    private resistanceScale = 1;
 
     private handleDataNotify = (event: Event) => {
         const char = event.target as BluetoothRemoteGATTCharacteristic;
@@ -81,10 +98,28 @@ export class V1Protocol implements DeviceProtocol {
         const parsedData: ParsedData = {};
 
         // Resistance - Based on actual device data, it's at byte[13]
-        // Data format: ab 04 11 0b 11 00 01 00 00 03 1a 00 8a [09] 00
-        //                                                      ↑ byte[13]
         if (bytes.length > 13) {
-            parsedData.resistance = bytes[13];
+            const rawResistance = bytes[13];
+
+            // Device Type Detection
+            // Based on official App's EnumDeviceKt, Rowing Machine has code 9.
+            // In V1 protocol, Byte 3 is typically the Device Type.
+            const isRowingMachine = bytes.length > 3 && bytes[3] === 0x09;
+
+            // Resistance Scaling Logic:
+            // 1. If it's explicitly a Rowing Machine (Type 9), use 4x scaling (0-96 -> 1-24).
+            // 2. Fallback: If raw value > 24, it's definitely scaled, so divide by 4.
+            // 3. Otherwise, use raw value (for standard devices).
+            if (isRowingMachine || rawResistance > 24) {
+                if (this.resistanceScale !== 4) {
+                    this.resistanceScale = 4;
+                    // Log only once when switching (or if identified as rower)
+                    this.log('info', `V1: Resistance scaling active (Type: ${isRowingMachine ? 'Rowing(9)' : 'Auto-Detect'}, Raw: ${rawResistance})`);
+                }
+                parsedData.resistance = Math.floor(rawResistance / 4);
+            } else {
+                parsedData.resistance = rawResistance;
+            }
         }
 
         // Time (bytes 3-4, typically in seconds, big-endian)
@@ -181,6 +216,10 @@ export class V1Protocol implements DeviceProtocol {
         // Logic from V1Handler.writeBleVer0x01Resistance:
         // byte[] bArr2 = {InstructionCode.FRAME_HEADER, 3, 0, bArr[3], bArr[4], (byte) i4, bArr[6]};
         // where bArr is previous ellipticalData.
+
+        // Note: We send 'level' directly (1-24).
+        // If device expects 0-96 scaling on write, we might need to multiply by 4.
+        // But official app sends commandData directly. Assuming symmetric scaling is NOT used for write, or handled by device.
 
         const cmd = new Uint8Array([
             V1_CONSTANTS.FRAME_HEADER, // 0xAB
