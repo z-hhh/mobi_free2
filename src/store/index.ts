@@ -3,7 +3,23 @@ import logReducer from './logSlice';
 import deviceReducer, { hydrateDevice } from './deviceSlice';
 import workoutReducer from './workoutSlice';
 import settingsReducer, { hydrateSettings } from './settingsSlice';
-import { timerMiddleware } from './timerMiddleware';
+import { createTimerMiddleware } from './timerMiddleware';
+
+// Define reducers first to break circular dependency
+const rootReducer = {
+    log: logReducer,
+    device: deviceReducer,
+    workout: workoutReducer,
+    settings: settingsReducer,
+};
+
+// Export RootState type before store creation
+export type RootState = {
+    log: ReturnType<typeof logReducer>;
+    device: ReturnType<typeof deviceReducer>;
+    workout: ReturnType<typeof workoutReducer>;
+    settings: ReturnType<typeof settingsReducer>;
+};
 
 // Load persisted state from localStorage
 const loadState = () => {
@@ -21,14 +37,9 @@ const loadState = () => {
 };
 
 export const store = configureStore({
-    reducer: {
-        log: logReducer,
-        device: deviceReducer,
-        workout: workoutReducer,
-        settings: settingsReducer,
-    },
+    reducer: rootReducer,
     middleware: (getDefaultMiddleware) =>
-        getDefaultMiddleware().concat(timerMiddleware),
+        getDefaultMiddleware().concat(createTimerMiddleware()),
 });
 
 // Hydrate on start
@@ -56,5 +67,4 @@ store.subscribe(() => {
     localStorage.setItem('mobi_device', JSON.stringify(deviceStateToSave));
 });
 
-export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;

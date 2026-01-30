@@ -1,20 +1,25 @@
-import { Middleware, AnyAction } from '@reduxjs/toolkit';
-import type { RootState } from './index';
+import { Middleware } from '@reduxjs/toolkit';
 import { updateMetrics } from './workoutSlice';
+
+interface ActionWithType {
+    type: string;
+    payload?: any;
+}
 
 /**
  * Timer middleware - automatically manages workout duration
  * Starts when connected and has activity (speed > 0.5)
  * Stops after 3 seconds of no data updates
  */
-export const timerMiddleware: Middleware<{}, RootState> = (store) => {
+export const createTimerMiddleware = (): Middleware => (store) => {
     let intervalId: number | null = null;
     let timerStartTime = 0;  // When current timer session started
     let accumulatedDuration = 0;  // Total duration from previous sessions
     let lastDataUpdate = 0;  // Last time we received data
     let isTimerDispatch = false;  // Flag to prevent recursive triggers
 
-    return (next) => (action: AnyAction) => {
+    return (next) => (action: unknown) => {
+        const typedAction = action as ActionWithType;
         const result = next(action);
         const state = store.getState();
 
@@ -26,7 +31,7 @@ export const timerMiddleware: Middleware<{}, RootState> = (store) => {
 
         // Track data updates from device (not from timer)
         if (
-            action.type === 'workout/updateMetrics' &&
+            typedAction.type === 'workout/updateMetrics' &&
             (state.workout.speed > 0 || state.workout.spm > 0 || state.workout.rpm > 0)
         ) {
             lastDataUpdate = Date.now();
@@ -34,8 +39,8 @@ export const timerMiddleware: Middleware<{}, RootState> = (store) => {
         }
 
         // Reset everything if duration is reset to 0 externally
-        if (action.type === 'workout/reset' ||
-            (action.type === 'workout/updateMetrics' && action.payload?.duration === 0 && state.workout.duration === 0)) {
+        if (typedAction.type === 'workout/reset' ||
+            (typedAction.type === 'workout/updateMetrics' && typedAction.payload?.duration === 0 && state.workout.duration === 0)) {
             console.log('[TimerMiddleware] Reset detected');
             accumulatedDuration = 0;
             timerStartTime = 0;

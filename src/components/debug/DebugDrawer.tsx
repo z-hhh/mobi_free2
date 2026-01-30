@@ -1,7 +1,7 @@
 import { Drawer, ScrollArea, Text, Badge, ActionIcon, Group, Code, Stack, Checkbox, Button } from '@mantine/core';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../store';
-import { clearLogs, setDebugOpen } from '../../store/logSlice';
+import { clearLogs, setDebugOpen, LogEntry } from '../../store/logSlice';
 import { IconCopy, IconTrash, IconBug } from '@tabler/icons-react';
 import { useClipboard } from '@mantine/hooks';
 
@@ -37,7 +37,7 @@ export function DebugDrawer() {
 
                 <Code block style={{ flex: 1, overflow: 'hidden' }}>
                     <ScrollArea h="100%">
-                        {logs.map(log => (
+                        {logs.map((log: LogEntry) => (
                             <div key={log.id} style={{ marginBottom: 4 }}>
                                 <Text span size="xs" c="dimmed">{dayjs(log.timestamp).format('HH:mm:ss.SSS')} </Text>
                                 <Badge

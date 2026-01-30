@@ -3,6 +3,7 @@ import { useBluetooth } from '../../hooks/useBluetooth';
 import { IconBluetooth, IconAlertCircle, IconCopy, IconCheck, IconBolt } from '@tabler/icons-react';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
+import { LogEntry } from '../../store/logSlice';
 import { useState } from 'react';
 import { bluetoothManager } from '../../services/bluetooth/BluetoothManager';
 
@@ -23,7 +24,7 @@ export function ConnectionOverlay() {
     const copyLogsToClipboard = async () => {
         try {
             // Format logs as text
-            const logsText = logs.map(log => {
+            const logsText = logs.map((log: LogEntry) => {
                 const data = log.data ? `\nData: ${JSON.stringify(log.data, null, 2)}` : '';
                 return `[${log.timestamp}] [${log.level.toUpperCase()}] ${log.message}${data}`;
             }).join('\n\n');
