@@ -33,29 +33,55 @@ export class V1Protocol implements DeviceProtocol {
         }
 
         // Get Write Characteristic
-        // First try standard FFE3
+        // Logic:
+        // 1. Try standard FFE3 in FFE0 service.
+        // 2. Try any writable char in FFE0 service.
+        // 3. Try FFE5 service (seen in some variants) => any writable char.
+        // 4. Fallback to Read-Only mode.
         try {
-            this.writeChar = await this.service.getCharacteristic(BLE_UUIDS.V1_WRITE);
-            this.log('info', 'V1: Write Char (FFE3) available');
-        } catch (e) {
-            this.log('warn', 'V1: FFE3 not found, searching for alternative write char...');
+            // Helper to find writable char in a service
+            const findWritable = async (svc: BluetoothRemoteGATTService, serviceName: string): Promise<BluetoothRemoteGATTCharacteristic | null> => {
+                const chars = await svc.getCharacteristics();
+                // Log chars for debugging
+                const charList = chars.map(c => `${c.uuid} (Props: ${Object.keys(Object.getPrototypeOf(c.properties)).filter(k => (c.properties as any)[k]).join(',')})`).join(', ');
+                this.log('debug', `V1: Chars in ${serviceName}: [${charList}]`);
 
-            // Fallback: Search for ANY writable characteristic in the service
-            try {
-                const chars = await this.service.getCharacteristics();
-                const altWriteChar = chars.find(c => c.properties.write || c.properties.writeWithoutResponse);
-
-                if (altWriteChar) {
-                    this.writeChar = altWriteChar;
-                    this.log('info', `V1: Found alternative write char: ${altWriteChar.uuid}`);
-                } else {
-                    this.log('warn', 'V1: No writable characteristic found in service');
-                    throw new Error('V1 Protocol: No writable characteristic found (checked FFE3 and others)');
+                // Try FFE3 first if looking in V1 service
+                if (svc.uuid.indexOf('ffe0') > -1) {
+                    const ffe3 = chars.find(c => c.uuid.indexOf('ffe3') > -1);
+                    if (ffe3) return ffe3;
                 }
-            } catch (scanError) {
-                this.log('error', 'V1: Failed to scan for write char', scanError);
-                throw new Error('V1 Protocol: Failed to find write characteristic');
+
+                // Any writable
+                return chars.find(c => c.properties.write || c.properties.writeWithoutResponse) || null;
+            };
+
+            // 1. Check FFE0 (Current Service)
+            let writeCharCandidate = await findWritable(this.service, 'FFE0');
+
+            // 2. Check FFE5 (Alternative Service)
+            if (!writeCharCandidate) {
+                this.log('warn', 'V1: No write char in FFE0, checking FFE5...');
+                try {
+                    const serviceFFE5 = await server.getPrimaryService('0000ffe5-0000-1000-8000-00805f9b34fb');
+                    writeCharCandidate = await findWritable(serviceFFE5, 'FFE5');
+                } catch (e) {
+                    this.log('debug', 'V1: FFE5 service not found');
+                }
             }
+
+            if (writeCharCandidate) {
+                this.writeChar = writeCharCandidate;
+                this.log('info', `V1: Write Char configured: ${this.writeChar.uuid}`);
+            } else {
+                this.log('warn', 'V1: No writable characteristic found in FFE0 or FFE5. Entering READ-ONLY mode.');
+                // We do NOT throw here. We allow read-only connection.
+            }
+
+        } catch (e) {
+            this.log('error', 'V1: Error scanning for write char', e);
+            // Fallback to read-only
+            this.log('warn', 'V1: Defaulting to Read-Only mode due to scan error.');
         }
 
         this.log('info', 'V1Protocol: Connected');
