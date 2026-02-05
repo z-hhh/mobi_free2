@@ -74,14 +74,13 @@ export class V1Protocol implements DeviceProtocol {
                 this.writeChar = writeCharCandidate;
                 this.log('info', `V1: Write Char configured: ${this.writeChar.uuid}`);
             } else {
-                this.log('warn', 'V1: No writable characteristic found in FFE0 or FFE5. Entering READ-ONLY mode.');
-                // We do NOT throw here. We allow read-only connection.
+                this.log('warn', 'V1: No writable characteristic found in FFE0 or FFE5.');
+                throw new Error('V1 Protocol: Failed to find write characteristic');
             }
 
         } catch (e) {
             this.log('error', 'V1: Error scanning for write char', e);
-            // Fallback to read-only
-            this.log('warn', 'V1: Defaulting to Read-Only mode due to scan error.');
+            throw e;
         }
 
         this.log('info', 'V1Protocol: Connected');
