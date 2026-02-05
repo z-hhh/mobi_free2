@@ -42,9 +42,24 @@ export class V1Protocol implements DeviceProtocol {
             // Helper to find writable char in a service
             const findWritable = async (svc: BluetoothRemoteGATTService, serviceName: string): Promise<BluetoothRemoteGATTCharacteristic | null> => {
                 const chars = await svc.getCharacteristics();
+
+                // Helper to log properties robustly
+                const getProps = (c: BluetoothRemoteGATTCharacteristic) => {
+                    const p = c.properties;
+                    const props = [];
+                    if (p.broadcast) props.push('broadcast');
+                    if (p.read) props.push('read');
+                    if (p.writeWithoutResponse) props.push('writeNoResp');
+                    if (p.write) props.push('write');
+                    if (p.notify) props.push('notify');
+                    if (p.indicate) props.push('indicate');
+                    if (p.authenticatedSignedWrites) props.push('authSignedWrite');
+                    return props.join(',');
+                };
+
                 // Log chars for debugging
-                const charList = chars.map(c => `${c.uuid} (Props: ${Object.keys(Object.getPrototypeOf(c.properties)).filter(k => (c.properties as any)[k]).join(',')})`).join(', ');
-                this.log('debug', `V1: Chars in ${serviceName}: [${charList}]`);
+                const charList = chars.map(c => `${c.uuid} [${getProps(c)}]`).join(', ');
+                this.log('debug', `V1: Chars in ${serviceName}: ${charList}`);
 
                 // Try FFE3 first if looking in V1 service
                 if (svc.uuid.indexOf('ffe0') > -1) {
