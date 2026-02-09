@@ -104,96 +104,104 @@ export class V1Protocol implements DeviceProtocol {
     private resistanceScale = 1;
 
     private handleDataNotify = (event: Event) => {
-        const char = event.target as BluetoothRemoteGATTCharacteristic;
-        const value = char.value;
-        if (!value) return;
+        try {
+            const char = event.target as BluetoothRemoteGATTCharacteristic;
+            const value = char.value;
+            if (!value) return;
 
-        const bytes = new Uint8Array(value.buffer);
-        this.lastData = bytes; // Cache for control commands
+            const bytes = new Uint8Array(value.buffer);
+            this.lastData = bytes; // Cache for control commands
 
-        // V1 Data Parsing
-        // Based on typical elliptical machine protocols and mobi-official patterns
-        // The exact byte positions may need adjustment based on actual device behavior
+            // V1 Data Parsing
+            // Based on typical elliptical machine protocols and mobi-official patterns
+            // The exact byte positions may need adjustment based on actual device behavior
 
-        // Log raw data for debugging
-        const hex = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join(' ');
-        this.log('debug', `V1 Data (${bytes.length} bytes): ${hex}`);
+            // Log raw data for debugging
+            const hex = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join(' ');
+            this.log('debug', `V1 Data (${bytes.length} bytes): ${hex}`);
 
-        if (bytes.length < 10) {
-            // Not enough data, skip parsing
-            return;
-        }
-
-        // Check for error codes (per mobi-official V1Handler.handlingErrorCodes)
-        // Error codes are typically in specific byte positions
-        if (bytes.length > 2 && bytes[1] === 0xFF) {
-            // Error message detected
-            const errorCode = bytes[2];
-            this.handleErrorCode(errorCode);
-            return;
-        }
-
-        // Parse data based on common V1 protocol structure
-        // Note: These positions are based on actual device data analysis
-        const parsedData: ParsedData = {};
-
-        // Resistance - Based on actual device data, it's at byte[13]
-        if (bytes.length > 13) {
-            const rawResistance = bytes[13];
-
-            // Device Type Detection
-            // Based on official App's EnumDeviceKt, Rowing Machine has code 9.
-            // In V1 protocol, Byte 3 is typically the Device Type.
-            const isRowingMachine = bytes.length > 3 && bytes[3] === 0x09;
-
-            // Resistance Scaling Logic:
-            // 1. If it's explicitly a Rowing Machine (Type 9), use 4x scaling (0-96 -> 1-24).
-            // 2. Fallback: If raw value > 24, it's definitely scaled, so divide by 4.
-            // 3. Otherwise, use raw value (for standard devices).
-            if (isRowingMachine || rawResistance > 24) {
-                if (this.resistanceScale !== 4) {
-                    this.resistanceScale = 4;
-                    // Log only once when switching (or if identified as rower)
-                    this.log('info', `V1: Resistance scaling active (Type: ${isRowingMachine ? 'Rowing(9)' : 'Auto-Detect'}, Raw: ${rawResistance})`);
-                }
-                parsedData.resistance = Math.floor(rawResistance / 4);
-            } else {
-                parsedData.resistance = rawResistance;
+            if (bytes.length < 10) {
+                // Not enough data, skip parsing
+                return;
             }
-        }
 
-        // Time (bytes 3-4, typically in seconds, big-endian)
-        if (bytes.length > 4) {
-            const timeRaw = (bytes[3] << 8) | bytes[4];
-            parsedData.time = timeRaw; // in seconds
-        }
+            // Check for error codes (per mobi-official V1Handler.handlingErrorCodes)
+            // Error codes are typically in specific byte positions
+            if (bytes.length > 2 && bytes[1] === 0xFF) {
+                // Error message detected
+                const errorCode = bytes[2];
+                this.handleErrorCode(errorCode);
+                return;
+            }
 
-        // Distance (bytes 6-7, typically in meters or 0.1km units)
-        if (bytes.length > 7) {
-            const distRaw = (bytes[6] << 8) | bytes[7];
-            parsedData.distance = distRaw / 10; // convert to km
-        }
+            // Parse data based on common V1 protocol structure
+            // Note: These positions are based on actual device data analysis
+            const parsedData: ParsedData = {};
 
-        // Calories (bytes 8-9, typically in kcal)
-        if (bytes.length > 9) {
-            const calRaw = (bytes[8] << 8) | bytes[9];
-            parsedData.calories = calRaw;
-        }
+            // Resistance - Based on actual device data, it's at byte[13]
+            if (bytes.length > 13) {
+                const rawResistance = bytes[13];
 
-        // Speed (bytes 10-11, typically in 0.1 km/h units)
-        if (bytes.length > 11) {
-            const speedRaw = (bytes[10] << 8) | bytes[11];
-            parsedData.speed = speedRaw / 10; // convert to km/h
-        }
+                // Device Type Detection
+                // Based on official App's EnumDeviceKt, Rowing Machine has code 9.
+                // In V1 protocol, Byte 3 is typically the Device Type.
+                const isRowingMachine = bytes.length > 3 && bytes[3] === 0x09;
 
-        // SPM/RPM (byte 12, revolutions or steps per minute)
-        if (bytes.length > 12) {
-            parsedData.spm = bytes[12];
-        }
+                // Resistance Scaling Logic:
+                // 1. If it's explicitly a Rowing Machine (Type 9), use 4x scaling (0-96 -> 1-24).
+                // 2. Fallback: If raw value > 24, it's definitely scaled, so divide by 4.
+                // 3. Otherwise, use raw value (for standard devices).
+                if (isRowingMachine || rawResistance > 24) {
+                    if (this.resistanceScale !== 4) {
+                        this.resistanceScale = 4;
+                        // Log only once when switching (or if identified as rower)
+                        this.log('info', `V1: Resistance scaling active (Type: ${isRowingMachine ? 'Rowing(9)' : 'Auto-Detect'}, Raw: ${rawResistance})`);
+                    }
+                    parsedData.resistance = Math.floor(rawResistance / 4);
+                } else {
+                    parsedData.resistance = rawResistance;
+                }
+            }
 
-        // Send parsed data to callback
-        if (this.onDataCallback) {
-            this.onDataCallback(parsedData);
+            // Time (bytes 3-4, typically in seconds, big-endian)
+            if (bytes.length > 4) {
+                const timeRaw = (bytes[3] << 8) | bytes[4];
+                parsedData.time = timeRaw; // in seconds
+            }
+
+            // Distance (bytes 6-7, typically in meters or 0.1km units)
+            if (bytes.length > 7) {
+                const distRaw = (bytes[6] << 8) | bytes[7];
+                parsedData.distance = distRaw / 10; // convert to km
+            }
+
+            // Calories (bytes 8-9, typically in kcal)
+            if (bytes.length > 9) {
+                const calRaw = (bytes[8] << 8) | bytes[9];
+                parsedData.calories = calRaw;
+            }
+
+            // Speed (bytes 10-11, typically in 0.1 km/h units)
+            if (bytes.length > 11) {
+                const speedRaw = (bytes[10] << 8) | bytes[11];
+                parsedData.speed = speedRaw / 10; // convert to km/h
+            }
+
+            // SPM/RPM (byte 12, revolutions or steps per minute)
+            if (bytes.length > 12) {
+                parsedData.spm = bytes[12];
+            }
+
+            // Send parsed data to callback
+            if (this.onDataCallback) {
+                this.onDataCallback(parsedData);
+            }
+        } catch (e) {
+            // Log parsing errors but don't crash the notification handler
+            const rawHex = this.lastData
+                ? Array.from(this.lastData).map(b => b.toString(16).padStart(2, '0')).join(' ')
+                : 'N/A';
+            this.log('error', `V1: Data parsing error (raw: ${rawHex})`, e);
         }
     }
 
