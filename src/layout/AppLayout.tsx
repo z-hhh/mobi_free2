@@ -76,12 +76,12 @@ export function AppLayout() {
                             </Menu.Target>
 
                             <Menu.Dropdown>
-                                <Menu.Item
+                                {/* <Menu.Item
                                     leftSection={<IconHeart size={16} />}
                                     onClick={openDonate}
                                 >
                                     捐助项目
-                                </Menu.Item>
+                                </Menu.Item> */}
 
                                 <Menu.Item
                                     leftSection={<IconBrandGithub size={16} />}
@@ -119,7 +119,7 @@ export function AppLayout() {
             </AppShell.Main>
 
             <SettingsModal opened={settingsOpen} onClose={closeSettings} />
-            <DonateModal opened={donateOpen} onClose={closeDonate} />
+            {/* <DonateModal opened={donateOpen} onClose={closeDonate} /> */}
             <DebugDrawer />
             <ConnectionOverlay />
         </AppShell>
