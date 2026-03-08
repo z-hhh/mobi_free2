@@ -75,12 +75,16 @@ class BluetoothManager {
             await this.connect(device);
 
         } catch (error: any) {
-            if (error.name === 'NotFoundError') {
+            // Bluefy sometimes throws "2" when user cancels scan
+            const isBluefyCancel = error === '2' || error?.message === '2';
+
+            if (error?.name === 'NotFoundError' || isBluefyCancel) {
                 store.dispatch(setConnectionStatus('disconnected'));
                 store.dispatch(addLog({ level: 'info', message: 'User cancelled scan' }));
             } else {
-                store.dispatch(setError(error.message));
-                store.dispatch(addLog({ level: 'error', message: 'Scan Error', data: error }));
+                const errorMsg = error?.message || String(error);
+                store.dispatch(setError(errorMsg));
+                store.dispatch(addLog({ level: 'error', message: 'Scan Error', data: errorMsg }));
                 store.dispatch(setConnectionStatus('error'));
             }
         }

@@ -20,10 +20,23 @@ export class V1Protocol implements DeviceProtocol {
         this.server = server;
         this.service = await server.getPrimaryService(this.serviceUUID);
 
-        // Get Data Characteristic (FFE4) - This is the main one for Elliptical
-        // Try this first to fail fast if device doesn't support V1 data
+        // Pre-fetch all characteristics
+        let characteristics: BluetoothRemoteGATTCharacteristic[] = [];
         try {
-            this.dataChar = await this.service.getCharacteristic(BLE_UUIDS.V1_DATA);
+            characteristics = await this.service.getCharacteristics();
+        } catch (e) {
+            this.log('warn', 'V1: Failed to pre-fetch characteristics', e);
+        }
+
+        const getCharSafely = async (uuid: string) => {
+            const cached = characteristics.find(c => c.uuid === uuid);
+            if (cached) return cached;
+            return await this.service!.getCharacteristic(uuid);
+        };
+
+        // Get Data Characteristic (FFE4)
+        try {
+            this.dataChar = await getCharSafely(BLE_UUIDS.V1_DATA);
             await this.dataChar.startNotifications();
             this.dataChar.addEventListener('characteristicvaluechanged', this.handleDataNotify);
             this.log('info', 'V1: Listening for Data (FFE4)');

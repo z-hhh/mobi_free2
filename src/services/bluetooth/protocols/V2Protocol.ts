@@ -17,25 +17,45 @@ export class V2Protocol implements DeviceProtocol {
         this.server = server;
         this.service = await server.getPrimaryService(this.serviceUUID);
 
-        // Get Control Characteristic
-        this.controlChar = await this.service.getCharacteristic(BLE_UUIDS.V2_CONTROL);
-
-        // Unlock V2 Device (CRITICAL: Required before any control commands)
-        // Per mobi-official V2Handler.unlock0x02VerBLeDeviceWritePermission
+        // Pre-fetch all characteristics
+        // This is a known workaround for Bluefy & certain Web Bluetooth stacks
+        let characteristics: BluetoothRemoteGATTCharacteristic[] = [];
         try {
-            const unlockChar = await this.service.getCharacteristic(BLE_UUIDS.V2_UNLOCK);
+            characteristics = await this.service.getCharacteristics();
+            const charUUIDs = characteristics.map(c => c.uuid.split('-')[0].substring(4));
+            this.log('debug', `V2: Found chars in ${this.serviceUUID.substring(4, 8)}: ${charUUIDs.join(', ')}`);
+        } catch (e) {
+            this.log('warn', 'V2: Failed to pre-fetch characteristics, proceeding with direct calls', e);
+        }
+
+        // Helper to get characteristic safely either from cache or direct
+        const getCharSafely = async (uuid: string) => {
+            const cached = characteristics.find(c => c.uuid === uuid);
+            if (cached) return cached;
+            return await this.service!.getCharacteristic(uuid);
+        };
+
+        // Get Control Characteristic
+        try {
+            this.controlChar = await getCharSafely(BLE_UUIDS.V2_CONTROL);
+        } catch (e) {
+            this.log('warn', `V2: Control Char (${BLE_UUIDS.V2_CONTROL}) not found or error.`, e);
+        }
+
+        // Unlock V2 Device
+        try {
+            const unlockChar = await getCharSafely(BLE_UUIDS.V2_UNLOCK);
             await unlockChar.writeValue(V2_COMMANDS.UNLOCK_INSTRUCTION);
             this.log('info', 'V2: Device unlocked successfully (0x11 0x82 0x07)');
         } catch (e) {
-            this.log('error', 'V2: Failed to unlock device - control commands may not work', e);
-            throw new Error('Failed to unlock V2 device');
+            this.log('warn', 'V2: Failed to unlock device - control commands may not work', e);
         }
 
         // Read Device Information (from Device Info Service)
         await this.readDeviceInfo();
 
         // Setup Data Notifications
-        await this.setupDataNotifications();
+        await this.setupDataNotifications(getCharSafely);
 
         this.log('info', 'V2Protocol: Connected, unlocked, and data monitoring active');
     }
@@ -78,7 +98,7 @@ export class V2Protocol implements DeviceProtocol {
         }
     }
 
-    private async setupDataNotifications(): Promise<void> {
+    private async setupDataNotifications(getCharSafely?: (uuid: string) => Promise<BluetoothRemoteGATTCharacteristic>): Promise<void> {
         // Setup notifications for various data characteristics
         const dataCharUUIDs = [
             { uuid: BLE_UUIDS.V2_INTERVAL, name: 'Interval Data (8811)' },
@@ -89,8 +109,8 @@ export class V2Protocol implements DeviceProtocol {
 
         for (const { uuid, name } of dataCharUUIDs) {
             try {
-                const char = await this.service!.getCharacteristic(uuid);
-                if (char.properties.notify) {
+                const char = getCharSafely ? await getCharSafely(uuid) : await this.service!.getCharacteristic(uuid);
+                if (char.properties.notify || char.properties.indicate) {
                     await char.startNotifications();
                     char.addEventListener('characteristicvaluechanged', this.handleDataNotification);
                     this.dataChars.set(uuid, char);
