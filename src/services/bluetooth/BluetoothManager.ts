@@ -9,6 +9,7 @@ import {
 import { updateMetrics } from '../../store/workoutSlice';
 import { DeviceProtocol } from './DeviceProtocol';
 import { V2Protocol } from './protocols/V2Protocol';
+import { V2RowerProtocol } from './protocols/V2RowerProtocol';
 import { V1Protocol } from './protocols/V1Protocol';
 import { FTMSProtocol } from './protocols/FTMSProtocol';
 import { HuanTongProtocol } from './protocols/HuanTongProtocol';
@@ -119,6 +120,8 @@ class BluetoothManager {
             const availableProtocols: Array<{ protocol: DeviceProtocol; version: 'v2' | 'v1' | 'ftms' }> = [];
 
             if (serviceUUIDs.includes(v2Service)) {
+                // Try Rower specific protocol first, it will fail and fallback if not a rower
+                availableProtocols.push({ protocol: new V2RowerProtocol(), version: 'v2' });
                 availableProtocols.push({ protocol: new V2Protocol(), version: 'v2' });
             }
             if (serviceUUIDs.includes(v1Service)) {

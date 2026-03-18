@@ -54,10 +54,11 @@ export const createTimerMiddleware = (): Middleware => (store) => {
 
         // Determine if timer should run
         const isConnected = state.device.connectionStatus === 'connected';
-        const hasActivity = state.workout.speed > 0.5;
+        // Any speed or movement (RPM/SPM) should start the timer
+        const hasActivity = state.workout.speed > 0.1 || state.workout.rpm > 0 || state.workout.spm > 0;
         const shouldRun = isConnected && hasActivity;
 
-        console.log(`[TimerMiddleware] speed=${state.workout.speed.toFixed(2)}, shouldRun=${shouldRun}, timerActive=${!!intervalId}`);
+        // console.log(`[TimerMiddleware] speed=${state.workout.speed.toFixed(2)}, shouldRun=${shouldRun}, timerActive=${!!intervalId}`);
 
         // Start timer
         if (shouldRun && !intervalId) {
@@ -66,9 +67,9 @@ export const createTimerMiddleware = (): Middleware => (store) => {
             lastDataUpdate = Date.now();
 
             intervalId = window.setInterval(() => {
-                // Check for stale data (no updates for 3 seconds)
+                // Check for stale data (no updates for 5 seconds - increased from 3s)
                 const timeSinceLastUpdate = lastDataUpdate > 0 ? Date.now() - lastDataUpdate : 0;
-                if (timeSinceLastUpdate > 3000) {
+                if (timeSinceLastUpdate > 5000) {
                     console.log(`[TimerMiddleware] No data for ${(timeSinceLastUpdate / 1000).toFixed(1)}s, stopping timer`);
                     if (intervalId) {
                         clearInterval(intervalId);

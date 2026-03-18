@@ -65,8 +65,9 @@ export function useEllipticalCalculator() {
         // Power estimation based on RPM and resistance
         // This is a simplified formula: Power (watts) = k * RPM * resistance
         // where k is an empirical constant (typically 0.5-1.5 for ellipticals)
+        // We use Math.max(1, resistance) to ensure calories are counted even at level 0
         const powerConstant = 1.0; // Adjust based on equipment
-        const power = Math.round(powerConstant * currentRpm * resistance);
+        const power = Math.round(powerConstant * currentRpm * Math.max(1, resistance));
 
         // --- CALORIES CALCULATION ---
         // Calories (kcal) based on power and time

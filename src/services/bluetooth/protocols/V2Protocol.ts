@@ -1,6 +1,11 @@
+import { store } from '../../../store';
+import { setEquipmentType } from '../../../store/deviceSlice';
 import { ParsedData, DeviceProtocol } from '../DeviceProtocol';
 import { BLE_UUIDS, V2_COMMANDS } from '../constants';
 
+/**
+ * Standard V2 Protocol (Optimized for Ellipticals/Bikes)
+ */
 export class V2Protocol implements DeviceProtocol {
     serviceUUID = BLE_UUIDS.V2_SERVICE;
 
@@ -17,42 +22,29 @@ export class V2Protocol implements DeviceProtocol {
         this.server = server;
         this.service = await server.getPrimaryService(this.serviceUUID);
 
-        // Pre-fetch all characteristics
-        // This is a known workaround for Bluefy & certain Web Bluetooth stacks
         let characteristics: BluetoothRemoteGATTCharacteristic[] = [];
         try {
             characteristics = await this.service.getCharacteristics();
-            const charUUIDs = characteristics.map(c => c.uuid.split('-')[0].substring(4));
-            this.log('debug', `V2: Found chars in ${this.serviceUUID.substring(4, 8)}: ${charUUIDs.join(', ')}`);
-        } catch (e) {
-            this.log('warn', 'V2: Failed to pre-fetch characteristics, proceeding with direct calls', e);
-        }
+        } catch (e) {}
 
-        // Helper to get characteristic safely either from cache or direct
         const getCharSafely = async (uuid: string) => {
-            const cached = characteristics.find(c => c.uuid === uuid);
+            const cached = characteristics.find(c => c.uuid.toLowerCase().includes(uuid.substring(4, 8)));
             if (cached) return cached;
             return await this.service!.getCharacteristic(uuid);
         };
 
-        // Get Control Characteristic
         try {
             this.controlChar = await getCharSafely(BLE_UUIDS.V2_CONTROL);
-        } catch (e) {
-            this.log('warn', `V2: Control Char (${BLE_UUIDS.V2_CONTROL}) not found or error.`, e);
-        }
-
-        // Unlock V2 Device
-        try {
             const unlockChar = await getCharSafely(BLE_UUIDS.V2_UNLOCK);
             await unlockChar.writeValue(V2_COMMANDS.UNLOCK_INSTRUCTION);
-            this.log('info', 'V2: Device unlocked successfully (0x11 0x82 0x07)');
-        } catch (e) {
-            this.log('warn', 'V2: Failed to unlock device - control commands may not work', e);
-        }
+            this.log('info', 'V2: Device unlocked');
+        } catch (e) {}
 
         // Read Device Information (from Device Info Service)
         await this.readDeviceInfo();
+
+        // Set type as elliptical by default (standard V2)
+        store.dispatch(setEquipmentType('elliptical'));
 
         // Setup Data Notifications
         await this.setupDataNotifications(getCharSafely);
@@ -70,9 +62,7 @@ export class V2Protocol implements DeviceProtocol {
                 const value = await modelChar.readValue();
                 const modelNumber = new TextDecoder().decode(value).replace(/\0/g, '').trim();
                 this.log('info', `V2: Model Number: ${modelNumber}`);
-            } catch (e) {
-                this.log('debug', 'V2: Model Number not available');
-            }
+            } catch (e) {}
 
             // Read Serial Number (2a25)
             try {
@@ -80,36 +70,20 @@ export class V2Protocol implements DeviceProtocol {
                 const value = await serialChar.readValue();
                 const serialNumber = new TextDecoder().decode(value).replace(/\0/g, '').trim();
                 this.log('info', `V2: Serial Number: ${serialNumber}`);
-            } catch (e) {
-                this.log('debug', 'V2: Serial Number not available');
-            }
-
-            // Read Firmware Version (2a26)
-            try {
-                const firmwareChar = await deviceInfoService.getCharacteristic(BLE_UUIDS.FIRMWARE_REV);
-                const value = await firmwareChar.readValue();
-                const firmwareVersion = new TextDecoder().decode(value).replace(/\0/g, '').trim();
-                this.log('info', `V2: Firmware Version: ${firmwareVersion}`);
-            } catch (e) {
-                this.log('debug', 'V2: Firmware Version not available');
-            }
-        } catch (e) {
-            this.log('debug', 'V2: Device Info Service not available', e);
-        }
+            } catch (e) {}
+        } catch (e) {}
     }
 
-    private async setupDataNotifications(getCharSafely?: (uuid: string) => Promise<BluetoothRemoteGATTCharacteristic>): Promise<void> {
-        // Setup notifications for various data characteristics
+    private async setupDataNotifications(getCharSafely: (uuid: string) => Promise<BluetoothRemoteGATTCharacteristic>): Promise<void> {
         const dataCharUUIDs = [
             { uuid: BLE_UUIDS.V2_INTERVAL, name: 'Interval Data (8811)' },
             { uuid: BLE_UUIDS.V2_RESISTANCE, name: 'Resistance Gear (8812)' },
-            { uuid: BLE_UUIDS.V2_DATA_ALL, name: 'All Device Data (8813)' },
-            { uuid: '0000880e-0000-1000-8000-00805f9b34fb', name: 'Machine State (880e)' }
+            { uuid: BLE_UUIDS.V2_DATA_ALL, name: 'All Device Data (8813)' }
         ];
 
         for (const { uuid, name } of dataCharUUIDs) {
             try {
-                const char = getCharSafely ? await getCharSafely(uuid) : await this.service!.getCharacteristic(uuid);
+                const char = await getCharSafely(uuid);
                 if (char.properties.notify || char.properties.indicate) {
                     await char.startNotifications();
                     char.addEventListener('characteristicvaluechanged', this.handleDataNotification);
@@ -117,18 +91,7 @@ export class V2Protocol implements DeviceProtocol {
                     this.log('info', `V2: Monitoring ${name}`);
                 }
             } catch (e) {
-                this.log('debug', `V2: ${name} not available or not notifiable`);
-            }
-        }
-
-        // Also listen for control responses
-        if (this.controlChar && (this.controlChar.properties.notify || this.controlChar.properties.indicate)) {
-            try {
-                await this.controlChar.startNotifications();
-                this.controlChar.addEventListener('characteristicvaluechanged', this.handleControlResponse);
-                this.log('info', 'V2: Listening for Control Responses');
-            } catch (e) {
-                this.log('warn', 'V2: Cannot listen for control responses', e);
+                this.log('debug', `V2: ${name} not available`);
             }
         }
     }
@@ -139,154 +102,51 @@ export class V2Protocol implements DeviceProtocol {
         if (!value) return;
 
         const bytes = new Uint8Array(value.buffer);
-        const uuid = char.uuid;
-
-        // Log raw data for debugging
-        const hex = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join(' ');
-        this.log('debug', `V2 Data [${uuid.substring(4, 8)}]: ${hex}`);
-
-        // Parse data based on characteristic UUID
+        const uuid = char.uuid.toLowerCase();
         const parsedData: ParsedData = {};
 
-        // Parse based on characteristic type
-        if (uuid === BLE_UUIDS.V2_RESISTANCE && bytes.length > 0) {
+        if (uuid.includes('8812') && bytes.length > 0) {
             parsedData.resistance = bytes[0];
-        } else if (uuid === BLE_UUIDS.V2_INTERVAL && bytes.length >= 2) {
-            // Parse interval data (8811) - used to calculate RPM/SPM
-            // Format: [interval_high, interval_low, count_high?, count_low?]
-            // interval is in milliseconds (big-endian)
+        } else if (uuid.includes('8811') && bytes.length >= 2) {
             const intervalMs = (bytes[0] << 8) | bytes[1];
-
             if (intervalMs > 0) {
-                // Calculate RPM: (60 seconds / interval_in_seconds) = RPM
-                // RPM = (60.0 / intervalMs) * 1000 / numberMagnets
-                // Assuming numberMagnets = 1 for most elliptical machines
-                const numberMagnets = 1;
-                const rpm = ((60.0 / intervalMs) * 1000) / numberMagnets;
-
-                // For elliptical machines, RPM is same as SPM (steps per minute)
-                parsedData.rpm = Math.round(rpm);
-                parsedData.spm = Math.round(rpm);
-            } else {
-                // intervalMs = 0 means machine is idle
-                parsedData.rpm = 0;
-                parsedData.spm = 0;
+                const rpm = Math.round(60000 / intervalMs);
+                parsedData.rpm = rpm;
+                parsedData.spm = rpm;
             }
-
-            // Optional: parse count if present (bytes 2-3)
-            if (bytes.length >= 4) {
-                const count = (bytes[2] << 8) | bytes[3];
-                this.log('debug', `V2 Interval: ${intervalMs}ms, count: ${count}`);
-            }
-        } else if (uuid === BLE_UUIDS.V2_DATA_ALL) {
-            // Parse comprehensive data packet (8813)
-            // Structure needs to be determined from actual device data
-            // This is a placeholder for the parsing logic
-            this.parseAllDeviceData(bytes, parsedData);
-        }
-
-        // Callback with parsed data
-        if (this.onDataCallback && Object.keys(parsedData).length > 0) {
-            this.onDataCallback(parsedData);
-        }
-    }
-
-    private parseAllDeviceData(bytes: Uint8Array, parsedData: ParsedData): void {
-        // Parse all device data (8813 characteristic)
-        // This is based on common V2 protocol patterns
-        // Actual structure should be verified with device logs
-
-        if (bytes.length < 10) return;
-
-        // Example parsing - adjust based on actual device data structure
-        // Resistance (if present)
-        if (bytes.length > 0) parsedData.resistance = bytes[0];
-
-        // Time (big-endian, seconds)
-        if (bytes.length > 2) {
+        } else if (uuid.includes('8813') && bytes.length >= 10) {
+            // Restore Original Elliptical Offsets
             parsedData.time = (bytes[1] << 8) | bytes[2];
-        }
-
-        // Distance (big-endian, 0.1 km units)
-        if (bytes.length > 4) {
-            const distRaw = (bytes[3] << 8) | bytes[4];
-            parsedData.distance = distRaw / 10;
-        }
-
-        // Calories
-        if (bytes.length > 6) {
+            parsedData.distance = ((bytes[3] << 8) | bytes[4]) / 10;
             parsedData.calories = (bytes[5] << 8) | bytes[6];
-        }
-
-        // Speed (0.1 km/h units)
-        if (bytes.length > 8) {
-            const speedRaw = (bytes[7] << 8) | bytes[8];
-            parsedData.speed = speedRaw / 10;
-        }
-
-        // SPM/RPM
-        if (bytes.length > 9) {
+            parsedData.speed = ((bytes[7] << 8) | bytes[8]) / 10;
             parsedData.spm = bytes[9];
         }
+
+        if (this.onDataCallback) this.onDataCallback(parsedData);
     }
 
-    private handleControlResponse = (event: Event) => {
-        const char = event.target as BluetoothRemoteGATTCharacteristic;
-        const value = char.value;
-        if (!value) return;
-        const hex = Array.from(new Uint8Array(value.buffer)).map(b => b.toString(16).padStart(2, '0')).join(' ');
-        this.log('info', `V2 Control Response: ${hex}`);
-    }
-
-    private log(level: 'info' | 'warn' | 'error' | 'debug', message: string, data?: any) {
+    private log(level: any, message: string, data?: any) {
         if (this.onLogCallback) this.onLogCallback(level, message, data);
     }
 
     disconnect(): void {
-        // Stop all notifications
         for (const char of this.dataChars.values()) {
-            try {
-                char.removeEventListener('characteristicvaluechanged', this.handleDataNotification);
-                // Don't await - device might already be disconnected
-                char.stopNotifications().catch(() => { /* ignore */ });
-            } catch (e) { /* ignore */ }
+            char.removeEventListener('characteristicvaluechanged', this.handleDataNotification);
+            char.stopNotifications().catch(() => {});
         }
-
-        if (this.controlChar) {
-            try {
-                this.controlChar.removeEventListener('characteristicvaluechanged', this.handleControlResponse);
-                this.controlChar.stopNotifications().catch(() => { /* ignore */ });
-            } catch (e) { /* ignore */ }
-        }
-
         this.dataChars.clear();
         this.server = null;
-        this.service = null;
-        this.controlChar = null;
-        this.onDataCallback = null;
-        this.onErrorCallback = null;
-        this.onLogCallback = null;
     }
 
-    async setResistance(level: number): Promise<void> {
-        if (!this.controlChar) {
-            this.log('warn', 'V2: Control Characteristic not found');
-            return;
+    async setResistance(level: number) {
+        if (this.controlChar) {
+            await this.controlChar.writeValue(new Uint8Array([0x02, 0x01, level]));
         }
-        // V2 Protocol Resistance Command: [CMD, LENGTH, LEVEL]
-        // Per mobi-official V2Handler.bleVer0x02Control case 4:
-        // CMD=0x02 (resistance), LENGTH=0x01, DATA=level
-        const command = new Uint8Array([0x02, 0x01, level]);
-        await this.controlChar.writeValue(command);
-        this.log('info', `V2: Set Resistance to ${level}`);
     }
 
-    async setIncline(level: number): Promise<void> {
-        // TODO: Implement incline control if supported
-        this.log('warn', 'V2: Incline control not yet implemented');
-    }
-
-    onData(cb: (data: ParsedData) => void) { this.onDataCallback = cb; }
-    onError(cb: (error: Error) => void) { this.onErrorCallback = cb; }
-    onLog(cb: (level: 'info' | 'warn' | 'error' | 'debug', message: string, data?: any) => void) { this.onLogCallback = cb; }
+    async setIncline() {}
+    onData(cb: any) { this.onDataCallback = cb; }
+    onError(cb: any) { this.onErrorCallback = cb; }
+    onLog(cb: any) { this.onLogCallback = cb; }
 }
