@@ -15,6 +15,7 @@ export interface WorkoutMetrics {
     split500m: number;
 
     isPaused: boolean;
+    hasReceivedAllData: boolean;
 }
 
 const initialState: WorkoutMetrics = {
@@ -31,6 +32,7 @@ const initialState: WorkoutMetrics = {
     count: 0,
     split500m: 0,
     isPaused: false,
+    hasReceivedAllData: false,
 };
 
 const workoutSlice = createSlice({

@@ -11,6 +11,7 @@ export interface ParsedData {
     resistance?: number; // level
     incline?: number; // %
     count?: number; // Total strokes/steps
+    hasReceivedAllData?: boolean; // Flag to indicate if comprehensive data was received natively
 }
 
 export interface DeviceProtocol {

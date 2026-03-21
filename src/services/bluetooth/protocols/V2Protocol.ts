@@ -114,13 +114,19 @@ export class V2Protocol implements DeviceProtocol {
                 parsedData.rpm = rpm;
                 parsedData.spm = rpm;
             }
-        } else if (uuid.includes('8813') && bytes.length >= 10) {
-            // Restore Original Elliptical Offsets
-            parsedData.time = (bytes[1] << 8) | bytes[2];
-            parsedData.distance = ((bytes[3] << 8) | bytes[4]) / 10;
-            parsedData.calories = (bytes[5] << 8) | bytes[6];
-            parsedData.speed = ((bytes[7] << 8) | bytes[8]) / 10;
-            parsedData.spm = bytes[9];
+        } else if (uuid.includes('8813') && bytes.length >= 9) {
+            // Restore Official Offsets based on Mobi V2Handler
+            parsedData.hasReceivedAllData = true;
+            parsedData.speed = bytes[0] / 10;
+            parsedData.incline = bytes[1];
+            parsedData.spm = bytes[2];
+            parsedData.rpm = bytes[2]; // Common mappings use RPM
+            parsedData.time = (bytes[3] << 8) | bytes[4]; // Duration in seconds
+            parsedData.distance = ((bytes[5] << 8) | bytes[6]) / 1000; // Sent as meters, convert to km
+            parsedData.calories = ((bytes[7] << 8) | bytes[8]) / 10; // Sent as 0.1 kcal
+            if (bytes.length >= 11) {
+                parsedData.power = (bytes[9] << 8) | bytes[10];
+            }
         }
 
         if (this.onDataCallback) this.onDataCallback(parsedData);

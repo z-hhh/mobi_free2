@@ -10,7 +10,7 @@ import { updateMetrics } from '../store/workoutSlice';
  */
 export function useEllipticalCalculator() {
     const dispatch = useDispatch();
-    const { rpm, spm, resistance, duration } = useSelector((state: RootState) => state.workout);
+    const { rpm, spm, resistance, duration, hasReceivedAllData } = useSelector((state: RootState) => state.workout);
     const { connectionStatus, protocolVersion } = useSelector((state: RootState) => state.device);
 
     const lastUpdateRef = useRef<number>(0);
@@ -20,6 +20,11 @@ export function useEllipticalCalculator() {
     useEffect(() => {
         // Only run for V2 protocol
         if (protocolVersion !== 'v2' || connectionStatus !== 'connected') {
+            return;
+        }
+
+        // If the device natively provides comprehensive 8813 data, disable the local calculator
+        if (hasReceivedAllData) {
             return;
         }
 
