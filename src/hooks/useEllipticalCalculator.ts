@@ -66,20 +66,27 @@ export function useEllipticalCalculator() {
         const distanceIncrementKm = speedKmh * (deltaTime / 3600);
         accumulatedDistanceRef.current += distanceIncrementKm;
 
-        // --- POWER CALCULATION ---
-        // Power estimation based on RPM and resistance
-        // This is a simplified formula: Power (watts) = k * RPM * resistance
-        // where k is an empirical constant (typically 0.5-1.5 for ellipticals)
-        // We use Math.max(1, resistance) to ensure calories are counted even at level 0
-        const powerConstant = 1.0; // Adjust based on equipment
-        const power = Math.round(powerConstant * currentRpm * Math.max(1, resistance));
+        // --- POWER CALCULATION (Official Mobi Algorithm) ---
+        // Exponential polynomial curve fitting based on reverse-engineered Android source
+        const maxResistance = 32.0; // Typical max resistance for Mobi ellipticals
+        const safeResistance = Math.max(1, resistance);
+        
+        const x = Math.exp(currentRpm / 100.0);
+        const y = Math.exp((safeResistance * 32.0 / maxResistance) / 10.0);
+        
+        const c0 = 39.94501450202982;
+        const c1 = -67.52588516;
+        const c2 = -39.15593086;
+        const c3 = 27.55487038;
+        const c4 = 38.79652081;
+        const c5 = -0.30231185;
+        
+        let powerRaw = (c5 * y * y) + (c4 * x * y) + (c3 * x * x) + (c2 * y) + (c1 * x) + c0;
+        const power = Math.max(0, Math.round(powerRaw));
 
-        // --- CALORIES CALCULATION ---
-        // Calories (kcal) based on power and time
-        // 1 watt = 0.86 kcal/hour, so: kcal/hour = watts * 0.86
-        // kcal = (watts * 0.86 * time_in_hours)
-        const caloriesPerHour = power * 0.86;
-        const caloriesIncrement = caloriesPerHour * (deltaTime / 3600);
+        // --- CALORIES CALCULATION (Official Mobi Algorithm) ---
+        // In the official app, instantaneous calories burned per second = Power / 1000
+        const caloriesIncrement = (power / 1000.0) * deltaTime;
         accumulatedCaloriesRef.current += caloriesIncrement;
 
         // Update metrics
