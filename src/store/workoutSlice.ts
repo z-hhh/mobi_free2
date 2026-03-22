@@ -12,6 +12,11 @@ export interface WorkoutSession {
         calories: number;
         count: number;
     };
+    lastRawData: {
+        distance: number;
+        calories: number;
+        count: number;
+    } | null;
 }
 
 export interface WorkoutMetrics {
@@ -56,7 +61,8 @@ const initialState: WorkoutMetrics = {
             distance: 0,
             calories: 0,
             count: 0
-        }
+        },
+        lastRawData: null
     }
 };
 
@@ -82,34 +88,42 @@ const workoutSlice = createSlice({
                         count: count || 0
                     };
                     state.session.accumulated = { distance: 0, calories: 0, count: 0 };
+                    state.session.lastRawData = {
+                        distance: distance || 0,
+                        calories: calories || 0,
+                        count: count || 0
+                    };
                 }
 
-                if (state.session.baselines && state.session.accumulated) {
-                    // Distance calculation (with handle for device reset when distance < baseline)
+                if (state.session.baselines && state.session.accumulated && state.session.lastRawData) {
+                    // Distance calculation (with handle for device reset when new raw distance < last raw distance)
                     if (distance !== undefined) {
-                        if (distance < state.session.baselines.distance) {
+                        if (distance < state.session.lastRawData.distance) {
                             state.session.accumulated.distance = state.distance;
                             state.session.baselines.distance = distance;
                         }
                         state.distance = state.session.accumulated.distance + (distance - state.session.baselines.distance);
+                        state.session.lastRawData.distance = distance;
                     }
                     
                     // Calories calculation
                     if (calories !== undefined) {
-                        if (calories < state.session.baselines.calories) {
+                        if (calories < state.session.lastRawData.calories) {
                             state.session.accumulated.calories = state.calories;
                             state.session.baselines.calories = calories;
                         }
                         state.calories = state.session.accumulated.calories + (calories - state.session.baselines.calories);
+                        state.session.lastRawData.calories = calories;
                     }
 
                     // Count calculation
                     if (count !== undefined) {
-                        if (count < state.session.baselines.count) {
+                        if (count < state.session.lastRawData.count) {
                             state.session.accumulated.count = state.count;
                             state.session.baselines.count = count;
                         }
                         state.count = state.session.accumulated.count + (count - state.session.baselines.count);
+                        state.session.lastRawData.count = count;
                     }
                 }
             }
@@ -122,7 +136,8 @@ const workoutSlice = createSlice({
                 session: {
                     isActive: false,
                     baselines: null,
-                    accumulated: { distance: 0, calories: 0, count: 0 }
+                    accumulated: { distance: 0, calories: 0, count: 0 },
+                    lastRawData: null
                 }
             };
         },
