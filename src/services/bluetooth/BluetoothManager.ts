@@ -6,7 +6,7 @@ import {
     setProtocol,
     setError
 } from '../../store/deviceSlice';
-import { updateMetrics } from '../../store/workoutSlice';
+import { updateMetrics, resetWorkout } from '../../store/workoutSlice';
 import { DeviceProtocol } from './DeviceProtocol';
 import { V2Protocol } from './protocols/V2Protocol';
 import { V2RowerProtocol } from './protocols/V2RowerProtocol';
@@ -18,6 +18,7 @@ import { BLE_UUIDS } from './constants';
 class BluetoothManager {
     private device: BluetoothDevice | null = null;
     private protocol: DeviceProtocol | null = null;
+    private lastDisconnectTimestamp: number = 0;
 
     /**
      * Normalize UUID to full format
@@ -101,6 +102,13 @@ class BluetoothManager {
             const server = await device.gatt.connect();
             store.dispatch(addLog({ level: 'info', message: 'GATT connected' }));
             store.dispatch(setDeviceInfo({ name: device.name, id: device.id }));
+
+            // Support Auto-Reset if disconnected for more than 15 minutes
+            if (this.lastDisconnectTimestamp > 0 && (Date.now() - this.lastDisconnectTimestamp > 15 * 60 * 1000)) {
+                store.dispatch(addLog({ level: 'info', message: 'Auto-resetting workout (idle > 15 mins)' }));
+                store.dispatch(resetWorkout());
+            }
+            this.lastDisconnectTimestamp = 0; // Clear it until next disconnect
 
             // Determine Protocol
             const services = await server.getPrimaryServices();
@@ -243,6 +251,9 @@ class BluetoothManager {
             this.protocol = null;
         }
         this.device = null; // Ensure device is cleared
+        
+        // Record disconnect time for auto-reset feature
+        this.lastDisconnectTimestamp = Date.now();
     }
 
     disconnect() {
