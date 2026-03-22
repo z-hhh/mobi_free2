@@ -70,11 +70,6 @@ const workoutSlice = createSlice({
             // Handle instantaneous metrics directly
             Object.assign(state, instantMetrics);
 
-            // Flag as received first data
-            if (!state.hasReceivedAllData) {
-                state.hasReceivedAllData = true;
-            }
-
             // Handle cumulative metrics with baseline logic
             const hasCumulativeData = distance !== undefined || calories !== undefined || count !== undefined;
             if (hasCumulativeData) {
