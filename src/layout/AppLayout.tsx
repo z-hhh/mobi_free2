@@ -14,6 +14,7 @@ import { ConnectionOverlay } from '../components/common/ConnectionOverlay';
 import { DonateModal } from '../components/common/DonateModal';
 
 import { useBluetooth } from '../hooks/useBluetooth';
+import { useWakeLock } from '../hooks/useWakeLock';
 import { bluetoothManager } from '../services/bluetooth/BluetoothManager';
 import { IconSettings, IconLayoutDashboard, IconHistory, IconPlugConnectedX, IconBrandGithub, IconHeart, IconDots, IconBug } from '@tabler/icons-react';
 
@@ -23,6 +24,9 @@ export function AppLayout() {
     const [view, setView] = useState<string | null>('dashboard');
     const dispatch = useDispatch();
     const { device, status } = useBluetooth();
+    
+    // Keep screen awake while connected
+    useWakeLock(status === 'connected');
 
     return (
         <AppShell
